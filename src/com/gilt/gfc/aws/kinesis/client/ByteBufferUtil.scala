@@ -1,8 +1,8 @@
-package com.gilt.gfc.avro.util
+package com.gilt.gfc.aws.kinesis
 
 import java.nio.ByteBuffer
 
-object ByteBufferUtil {
+package object ByteBufferUtil {
 
   def toByteArray( bb: ByteBuffer
                  ): Array[Byte] = {

@@ -4,7 +4,6 @@ import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorC
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{KinesisClientLibConfiguration, Worker}
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason
 import com.amazonaws.services.kinesis.model.Record
-import com.gilt.gfc.avro.util.ByteBufferUtil
 import com.gilt.gfc.logging.Loggable
 
 import scala.concurrent.duration._
