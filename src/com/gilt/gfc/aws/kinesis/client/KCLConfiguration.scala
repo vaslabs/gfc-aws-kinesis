@@ -23,19 +23,6 @@ object KCLConfiguration {
   assert( HostName != null   , "Couldn't determine hostname, got null" )
   assert( ! HostName.isEmpty , "Couldn't determine hostname, got empty string" )
 
-
-  /** This needs to be called to force Java to refresh cached DNS names of AWS service end-points. */
-  def setJavaDnsCacheTtl(ttl: Int) {
-    require(ttl > 0, s"TTL must be >0, got: ${ttl}")
-    java.security.Security.setProperty("networkaddress.cache.ttl", ttl.toString)
-  }
-
-
-  // Se it on object init, kind of a hack but seems important enough that we shouldn't forget.
-  // Can be reset to another value if required.
-  setJavaDnsCacheTtl(60)
-
-
   /** Provides some initial config, can be further customized.
     * Mainly a point of reference for imports and doc links.
     *
