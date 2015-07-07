@@ -6,7 +6,7 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration
 
 
-/** Configures KCL to connect to mobile tapstream.
+/** Configures KCL
   *
   * http://docs.aws.amazon.com/kinesis/latest/dev/kinesis-record-processor-implementation-app-java.html
   * https://github.com/aws/aws-sdk-java/blob/master/src/samples/AmazonKinesisApplication/SampleKinesisApplication.java
@@ -36,21 +36,19 @@ object KCLConfiguration {
   setJavaDnsCacheTtl(60)
 
 
-  /** Provides some initial config for mobile tapstreams, can be further customized.
+  /** Provides some initial config, can be further customized.
     * Mainly a point of reference for imports and doc links.
     *
-    * @param applicationName name of the tapstream consumer
+    * @param applicationName name of the consumer
     *
-    * @param streamName kinesis stream name. Mobile Kinesis tapstreams follow avdl namespaces in
-    *                   https://github.com/gilt/events-mobile-tapstream
-    *                   E.g. com.gilt.mobile.tapstream.v3
+    * @param streamName kinesis stream name
     */
   def apply( applicationName: String
            , streamName: String
            ): KinesisClientLibConfiguration = {
 
     new KinesisClientLibConfiguration(
-      // We want same app to process multiple versions of tapstream,
+      // We want same app to process multiple versions of stream,
       // this name-spaces them to avoid name clash in dynamodb.
       s"${applicationName}.${streamName}"
     , streamName
@@ -59,4 +57,3 @@ object KCLConfiguration {
     )
   }
 }
-
