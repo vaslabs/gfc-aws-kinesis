@@ -1,4 +1,4 @@
-package com.amazonaws.kinesis
+package com.gilt.gfc.aws.kinesis.client
 
 import java.nio.ByteBuffer
 import java.util.concurrent._
