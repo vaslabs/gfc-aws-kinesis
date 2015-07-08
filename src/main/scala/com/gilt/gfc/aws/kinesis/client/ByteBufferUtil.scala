@@ -1,8 +1,9 @@
-package com.gilt.gfc.aws.kinesis
+package com.gilt.gfc.aws.kinesis.client
 
 import java.nio.ByteBuffer
 
-package object ByteBufferUtil {
+private[client]
+object ByteBufferUtil {
 
   def toByteArray( bb: ByteBuffer
                  ): Array[Byte] = {
