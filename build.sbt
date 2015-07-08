@@ -7,10 +7,12 @@ scalaVersion := "2.11.6"
 crossScalaVersions := Seq("2.11.6", "2.10.5")
 
 libraryDependencies ++= Seq(
-  "com.gilt" %% "gfc-logging" % "0.0.2"
-, "com.gilt" %% "gfc-concurrent" % "0.1.0"
-, "com.amazonaws" % "aws-java-sdk-kinesis" % "1.9.16"
-, "org.specs2" %% "specs2-scalacheck" % "2.3.12" % Test
+"com.gilt"       %% "gfc-util"              % "0.0.6"
+, "com.gilt"     %% "gfc-logging"           % "0.0.2"
+, "com.gilt"     %% "gfc-concurrent"        % "0.1.0"
+, "com.amazonaws" % "aws-java-sdk-kinesis"  % "1.9.16"
+, "com.amazonaws" % "amazon-kinesis-client" % "1.2.1"
+, "org.specs2"   %% "specs2-scalacheck"     % "2.3.12" % Test
 )
 
 releaseCrossBuild := true
