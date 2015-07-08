@@ -6,6 +6,7 @@ import java.util.concurrent._
 import com.amazonaws.services.kinesis.AmazonKinesisClient
 import com.amazonaws.services.kinesis.model.{PutRecordsRequest, PutRecordsRequestEntry}
 import com.gilt.gfc.concurrent.ThreadFactoryBuilder
+import com.gilt.gfc.logging.Loggable
 
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Failure, Success}
@@ -25,7 +26,7 @@ trait KinesisPublisher {
 
 
 object KinesisPublisher
-  extends KinesisPublisher {
+  extends KinesisPublisher with Loggable {
 
   /** Publishes a batch of records to kinesis.
     *
@@ -45,17 +46,14 @@ object KinesisPublisher
     } onComplete {
       case Success(res) =>
         if (res.getFailedRecordCount > 0)
-          logger.error(s"Couldn't publish some of the batched records to ${streamName}: ${res}")
+          error(s"Couldn't publish some of the batched records to ${streamName}: ${res}")
         else
-          logger.info(s"Published kinesis batch to ${streamName} with the result: ${res}")
+          info(s"Published kinesis batch to ${streamName} with the result: ${res}")
 
       case Failure(err) =>
-        logger.error(s"Kinesis call to publish batch to ${streamName} failed: ${err.getMessage}", err)
+        error(s"Kinesis call to publish batch to ${streamName} failed: ${err.getMessage}", err)
     }
   }
-
-  private[this]
-  val logger = play.api.Logger(getClass.getName)
 
   /** N.B. AWS provides async client as well but it's just a simple wrapper around
     * sync client, with java-based Futures and other async primitives.
@@ -75,7 +73,7 @@ object KinesisPublisher
       ThreadFactoryBuilder(getClass.getSimpleName, getClass.getSimpleName).build()
     )
 
-    ExecutionContext.fromExecutor(tpe, (e) => logger.error(e.getMessage, e))
+    ExecutionContext.fromExecutor(tpe, (e) => error(e.getMessage, e))
   }
 
 

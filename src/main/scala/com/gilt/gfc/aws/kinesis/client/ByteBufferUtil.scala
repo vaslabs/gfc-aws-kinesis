@@ -1,4 +1,4 @@
-package com.gilt.gfc.aws.kinesis
+package com.gilt.gfc.aws.kinesis.client
 
 import java.nio.ByteBuffer
 
