@@ -9,6 +9,7 @@ import com.gilt.gfc.concurrent.ThreadFactoryBuilder
 import com.gilt.gfc.logging.Loggable
 
 import scala.concurrent.{Future, ExecutionContext}
+import scala.util.{Failure, Success}
 
 /** Simple wrapper around functions we intend to use from AWS SDK. */
 trait KinesisPublisher {
@@ -42,6 +43,14 @@ object KinesisPublisher
                      : Future[PutRecordsResult] = {
     Future {
       kinesisClient.putRecords(prepareRequest(streamName, records))
+    }.andThen {
+      case Success(res) =>
+        if (res.getFailedRecordCount > 0)
+          error(s"Couldn't publish some of the batched records to ${streamName}: ${res}")
+        else
+          info(s"Published kinesis batch to ${streamName} with the result: ${res}")
+      case Failure(err) =>
+        error(s"Kinesis call to publish batch to ${streamName} failed: ${err.getMessage}", err)
     }
   }
 
