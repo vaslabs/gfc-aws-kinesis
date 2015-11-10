@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent._
 
 import com.amazonaws.services.kinesis.AmazonKinesisClient
-import com.amazonaws.services.kinesis.model.{PutRecordsRequest, PutRecordsRequestEntry}
+import com.amazonaws.services.kinesis.model.{PutRecordsResult, PutRecordsRequest, PutRecordsRequestEntry}
 import com.gilt.gfc.concurrent.ThreadFactoryBuilder
 import com.gilt.gfc.logging.Loggable
 
@@ -20,7 +20,7 @@ trait KinesisPublisher {
   def publishBatch[R](streamName: String,
                       records: Iterable[R])
                      (implicit ev: KinesisRecordWriter[R])
-                     : Unit
+                     : Future[PutRecordsResult]
 
 }
 
@@ -40,16 +40,15 @@ object KinesisPublisher
   def publishBatch[R](streamName: String,
                       records: Iterable[R])
                      (implicit krw: KinesisRecordWriter[R])
-                     : Unit = {
+                     : Future[PutRecordsResult] = {
     Future {
       kinesisClient.putRecords(prepareRequest(streamName, records))
-    } onComplete {
+    }.andThen {
       case Success(res) =>
         if (res.getFailedRecordCount > 0)
           error(s"Couldn't publish some of the batched records to ${streamName}: ${res}")
         else
           info(s"Published kinesis batch to ${streamName} with the result: ${res}")
-
       case Failure(err) =>
         error(s"Kinesis call to publish batch to ${streamName} failed: ${err.getMessage}", err)
     }
