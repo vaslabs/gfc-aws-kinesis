@@ -62,7 +62,7 @@ object KinesisPublisher
   val kinesisClient = new AmazonKinesisClient()
 
   implicit
-  private[this]
+  private
   val executionContext = {
     val tpe = new java.util.concurrent.ThreadPoolExecutor(
       0,
