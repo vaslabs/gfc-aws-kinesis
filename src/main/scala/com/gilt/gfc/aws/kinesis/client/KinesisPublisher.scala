@@ -12,27 +12,14 @@ import com.gilt.gfc.logging.Loggable
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Failure, Success}
 
-/** Simple wrapper around functions we intend to use from AWS SDK. */
-trait KinesisPublisher {
+trait KinesisPublisher extends Loggable {
 
-  /** Publishes record batch, asynchronously, this call returns immediately
-    * and simply schedules a 'fire and forget' call to kinesis.
+  def awsCredentialsProvider: AWSCredentialsProvider
+
+  /** N.B. AWS provides async client as well but it's just a simple wrapper around
+    * sync client, with java-based Futures and other async primitives.
+    * No reason to use it, really.
     */
-  def publishBatch[R](streamName: String,
-                      records: Iterable[R])
-                     (implicit ev: KinesisRecordWriter[R])
-                     : Future[PutRecordsResult]
-
-}
-
-/** N.B. AWS provides async client as well but it's just a simple wrapper around
-  * sync client, with java-based Futures and other async primitives.
-  * No reason to use it, really.
-  */
-trait KinesisPublisherImpl extends KinesisPublisher with Loggable {
-
-  def awsCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
-
   lazy val kinesisClient:AmazonKinesisClient = new AmazonKinesisClient(awsCredentialsProvider)
 
   /** Publishes a batch of records to kinesis.
@@ -43,7 +30,6 @@ trait KinesisPublisherImpl extends KinesisPublisher with Loggable {
     * @tparam R          record type
     * @return            Nothing, this is a 'fire and forget' call, we assume events are 'lossy', errors are logged.
     */
-  override
   def publishBatch[R](streamName: String,
                       records: Iterable[R])
                      (implicit krw: KinesisRecordWriter[R])
@@ -100,5 +86,6 @@ trait KinesisPublisherImpl extends KinesisPublisher with Loggable {
   }
 }
 
-object KinesisPublisher extends KinesisPublisherImpl
-
+object KinesisPublisher extends KinesisPublisher {
+  override def awsCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+}
