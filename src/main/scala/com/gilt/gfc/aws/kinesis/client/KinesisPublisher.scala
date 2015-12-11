@@ -3,6 +3,7 @@ package com.gilt.gfc.aws.kinesis.client
 import java.nio.ByteBuffer
 import java.util.concurrent._
 
+import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.services.kinesis.AmazonKinesisClient
 import com.amazonaws.services.kinesis.model.{PutRecordsResult, PutRecordsRequest, PutRecordsRequestEntry}
 import com.gilt.gfc.concurrent.ThreadFactoryBuilder
@@ -24,9 +25,17 @@ trait KinesisPublisher {
 
 }
 
+/** N.B. AWS provides async client as well but it's just a simple wrapper around
+  * sync client, with java-based Futures and other async primitives.
+  * No reason to use it, really.
+  */
+class KinesisPublisherImpl(
+  private[this] val kinesisClient:AmazonKinesisClient
+  ) extends KinesisPublisher with Loggable {
 
-object KinesisPublisher
-  extends KinesisPublisher with Loggable {
+  def this() = this(new AmazonKinesisClient())
+
+  def this(awsCredentialsProvider: AWSCredentialsProvider) = this(new AmazonKinesisClient(awsCredentialsProvider))
 
   /** Publishes a batch of records to kinesis.
     *
@@ -53,13 +62,6 @@ object KinesisPublisher
         error(s"Kinesis call to publish batch to ${streamName} failed: ${err.getMessage}", err)
     }
   }
-
-  /** N.B. AWS provides async client as well but it's just a simple wrapper around
-    * sync client, with java-based Futures and other async primitives.
-    * No reason to use it, really.
-    */
-  private[this]
-  val kinesisClient = new AmazonKinesisClient()
 
   implicit
   private
@@ -99,3 +101,6 @@ object KinesisPublisher
       withRecords(putRecordsRequestEntries.asJavaCollection)
   }
 }
+
+object KinesisPublisher extends KinesisPublisherImpl()
+
