@@ -3,6 +3,7 @@ package com.gilt.gfc.aws.kinesis.client
 import java.nio.ByteBuffer
 import java.util.concurrent._
 
+import com.amazonaws.auth.{DefaultAWSCredentialsProviderChain, AWSCredentialsProvider}
 import com.amazonaws.services.kinesis.AmazonKinesisClient
 import com.amazonaws.services.kinesis.model.{PutRecordsResult, PutRecordsRequest, PutRecordsRequestEntry}
 import com.gilt.gfc.concurrent.ThreadFactoryBuilder
@@ -11,22 +12,15 @@ import com.gilt.gfc.logging.Loggable
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Failure, Success}
 
-/** Simple wrapper around functions we intend to use from AWS SDK. */
-trait KinesisPublisher {
+trait KinesisPublisher extends Loggable {
 
-  /** Publishes record batch, asynchronously, this call returns immediately
-    * and simply schedules a 'fire and forget' call to kinesis.
+  def awsCredentialsProvider: AWSCredentialsProvider
+
+  /** N.B. AWS provides async client as well but it's just a simple wrapper around
+    * sync client, with java-based Futures and other async primitives.
+    * No reason to use it, really.
     */
-  def publishBatch[R](streamName: String,
-                      records: Iterable[R])
-                     (implicit ev: KinesisRecordWriter[R])
-                     : Future[PutRecordsResult]
-
-}
-
-
-object KinesisPublisher
-  extends KinesisPublisher with Loggable {
+  lazy val kinesisClient:AmazonKinesisClient = new AmazonKinesisClient(awsCredentialsProvider)
 
   /** Publishes a batch of records to kinesis.
     *
@@ -36,7 +30,6 @@ object KinesisPublisher
     * @tparam R          record type
     * @return            Nothing, this is a 'fire and forget' call, we assume events are 'lossy', errors are logged.
     */
-  override
   def publishBatch[R](streamName: String,
                       records: Iterable[R])
                      (implicit krw: KinesisRecordWriter[R])
@@ -53,13 +46,6 @@ object KinesisPublisher
         error(s"Kinesis call to publish batch to ${streamName} failed: ${err.getMessage}", err)
     }
   }
-
-  /** N.B. AWS provides async client as well but it's just a simple wrapper around
-    * sync client, with java-based Futures and other async primitives.
-    * No reason to use it, really.
-    */
-  private[this]
-  val kinesisClient = new AmazonKinesisClient()
 
   implicit
   private
@@ -98,4 +84,8 @@ object KinesisPublisher
       withStreamName(streamName).
       withRecords(putRecordsRequestEntries.asJavaCollection)
   }
+}
+
+object KinesisPublisher extends KinesisPublisher {
+  override def awsCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
 }
