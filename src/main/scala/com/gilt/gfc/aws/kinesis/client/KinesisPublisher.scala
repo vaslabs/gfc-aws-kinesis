@@ -3,7 +3,7 @@ package com.gilt.gfc.aws.kinesis.client
 import java.nio.ByteBuffer
 import java.util.concurrent._
 
-import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.auth.{DefaultAWSCredentialsProviderChain, AWSCredentialsProvider}
 import com.amazonaws.services.kinesis.AmazonKinesisClient
 import com.amazonaws.services.kinesis.model.{PutRecordsResult, PutRecordsRequest, PutRecordsRequestEntry}
 import com.gilt.gfc.concurrent.ThreadFactoryBuilder
@@ -29,13 +29,11 @@ trait KinesisPublisher {
   * sync client, with java-based Futures and other async primitives.
   * No reason to use it, really.
   */
-class KinesisPublisherImpl(
-  private[this] val kinesisClient:AmazonKinesisClient
-  ) extends KinesisPublisher with Loggable {
+trait KinesisPublisherImpl extends KinesisPublisher with Loggable {
 
-  def this() = this(new AmazonKinesisClient())
+  def awsCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
 
-  def this(awsCredentialsProvider: AWSCredentialsProvider) = this(new AmazonKinesisClient(awsCredentialsProvider))
+  lazy val kinesisClient:AmazonKinesisClient = new AmazonKinesisClient(awsCredentialsProvider)
 
   /** Publishes a batch of records to kinesis.
     *
@@ -102,5 +100,5 @@ class KinesisPublisherImpl(
   }
 }
 
-object KinesisPublisher extends KinesisPublisherImpl()
+object KinesisPublisher extends KinesisPublisherImpl
 
