@@ -2,7 +2,7 @@ package com.gilt.gfc.aws.kinesis.client
 
 import java.util.UUID
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
+import com.amazonaws.auth.{AWSCredentialsProvider, AWSCredentialsProviderChain, DefaultAWSCredentialsProviderChain}
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration
 
 
@@ -32,6 +32,7 @@ object KCLConfiguration {
     */
   def apply( applicationName: String
            , streamName: String
+           , credentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            ): KinesisClientLibConfiguration = {
 
     new KinesisClientLibConfiguration(
@@ -39,7 +40,7 @@ object KCLConfiguration {
       // this name-spaces them to avoid name clash in dynamodb.
       s"${applicationName}.${streamName}"
     , streamName
-    , new DefaultAWSCredentialsProviderChain()
+    , credentialsProvider
     , s"${HostName}:${UUID.randomUUID()}"
     )
   }
