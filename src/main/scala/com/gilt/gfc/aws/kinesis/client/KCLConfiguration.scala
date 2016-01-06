@@ -32,7 +32,9 @@ object KCLConfiguration {
     */
   def apply( applicationName: String
            , streamName: String
-           , credentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+           , kinesisCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+           , dynamoCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+           , cloudWatchCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            ): KinesisClientLibConfiguration = {
 
     new KinesisClientLibConfiguration(
@@ -40,7 +42,9 @@ object KCLConfiguration {
       // this name-spaces them to avoid name clash in dynamodb.
       s"${applicationName}.${streamName}"
     , streamName
-    , credentialsProvider
+    , kinesisCredentialsProvider
+    , dynamoCredentialsProvider
+    , cloudWatchCredentialsProvider
     , s"${HostName}:${UUID.randomUUID()}"
     )
   }
