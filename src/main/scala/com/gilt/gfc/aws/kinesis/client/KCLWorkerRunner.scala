@@ -68,13 +68,6 @@ case class KCLWorkerRunner (
     this.copy(metricsFactory = Some(factory))
   }
 
-
-  protected def createWorker(recordProcessorFactory: IRecordProcessorFactory) = {
-    metricsFactory.fold(
-      new Worker(recordProcessorFactory, config))(
-      mf => new Worker(recordProcessorFactory, config, mf))
-  }
-
   /**
    * Run KCL worker with the given callback.
    *
@@ -102,7 +95,11 @@ case class KCLWorkerRunner (
         errs.map(_.failed.get).foreach { e => error(e.getMessage, e) }
       }
 
-      createWorker(recordProcessorFactory).run()
+      val worker = metricsFactory.fold(
+        new Worker(recordProcessorFactory, config))(
+        mf => new Worker(recordProcessorFactory, config, mf))
+
+      worker.run()
 
     } catch {
       case NonFatal(e) =>
