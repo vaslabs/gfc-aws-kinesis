@@ -4,7 +4,6 @@ import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorC
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorFactory
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{KinesisClientLibConfiguration, Worker}
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason
-import com.amazonaws.services.kinesis.metrics.impl.NullMetricsFactory
 import com.amazonaws.services.kinesis.metrics.interfaces.IMetricsFactory
 import com.amazonaws.services.kinesis.model.Record
 import com.gilt.gfc.logging.Loggable
@@ -26,12 +25,12 @@ import scala.util.{Failure, Success, Try}
  *
  */
 case class KCLWorkerRunner (
-  config: KinesisClientLibConfiguration,
-  checkpointInterval: FiniteDuration = 5 minutes,
-  numRetries: Int = 3,
-  initialize: (String) => Unit = (_) => (),
-  shutdown: (String, IRecordProcessorCheckpointer, ShutdownReason) => Unit = (_,_,_) => (),
-  metricsFactory: Option[IMetricsFactory] = None
+  config: KinesisClientLibConfiguration
+, checkpointInterval: FiniteDuration = 5 minutes
+, numRetries: Int = 3
+, initialize: (String) => Unit = (_) => ()
+, shutdown: (String, IRecordProcessorCheckpointer, ShutdownReason) => Unit = (_,_,_) => ()
+, metricsFactory: Option[IMetricsFactory] = None
 ) extends Loggable {
 
   /** Override default checkpointInterval. */
@@ -82,9 +81,9 @@ case class KCLWorkerRunner (
    * @param processRecords     (ShardId, Records, Checkpointer) => Unit : Kinesis record handler
    * @param evReader           evidence that A has implementation of KinesisRecordReader implicitly available in scope
    */
-  def runBatchProcessor[A]
-    (processRecords: (String, Seq[A], IRecordProcessorCheckpointer) => Unit)
-    (implicit evReader: KinesisRecordReader[A]): Unit = {
+  def runBatchProcessor[A]( processRecords: (String, Seq[A], IRecordProcessorCheckpointer) => Unit
+                         )( implicit evReader: KinesisRecordReader[A]
+                          ): Unit = {
     try {
 
       val recordProcessorFactory = KCLRecordProcessorFactory(
