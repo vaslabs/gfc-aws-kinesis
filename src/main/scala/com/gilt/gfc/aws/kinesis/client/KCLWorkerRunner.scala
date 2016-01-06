@@ -72,7 +72,7 @@ case class KCLWorkerRunner (
   protected def createWorker(recordProcessorFactory: IRecordProcessorFactory) = {
     metricsFactory.fold(
       new Worker(recordProcessorFactory, config))(
-      metricsFactory => new Worker(recordProcessorFactory, config, metricsFactory))
+      mf => new Worker(recordProcessorFactory, config, mf))
   }
 
   /**
