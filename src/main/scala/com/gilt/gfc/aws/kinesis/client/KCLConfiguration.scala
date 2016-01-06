@@ -30,10 +30,11 @@ object KCLConfiguration {
     *
     * @param streamName kinesis stream name
     */
-  def apply( applicationName: String
-           , streamName: String
-           , credentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
-           ): KinesisClientLibConfiguration = {
+  def apply(
+    applicationName: String,
+    streamName: String,
+    credentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+  ): KinesisClientLibConfiguration = {
 
     new KinesisClientLibConfiguration(
       // We want same app to process multiple versions of stream,
@@ -42,6 +43,25 @@ object KCLConfiguration {
     , streamName
     , credentialsProvider
     , s"${HostName}:${UUID.randomUUID()}"
+    )
+  }
+
+  def apply(
+    applicationName: String,
+    streamName: String,
+    kinesisCredentialsProvider: AWSCredentialsProvider,
+    dynamoCredentialsProvider: AWSCredentialsProvider,
+    cloudWatchCredentialsProvider: AWSCredentialsProvider
+  ) = {
+    new KinesisClientLibConfiguration(
+      // We want same app to process multiple versions of stream,
+      // this name-spaces them to avoid name clash in dynamodb.
+      s"${applicationName}.${streamName}",
+      streamName,
+      kinesisCredentialsProvider,
+      dynamoCredentialsProvider,
+      cloudWatchCredentialsProvider,
+      s"${HostName}:${UUID.randomUUID()}"
     )
   }
 }
