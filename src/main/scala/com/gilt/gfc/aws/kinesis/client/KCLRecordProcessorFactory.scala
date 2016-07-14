@@ -6,7 +6,7 @@ import com.amazonaws.services.kinesis.clientlibrary.interfaces.{IRecordProcessor
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason
 import com.amazonaws.services.kinesis.model.Record
 import com.gilt.gfc.logging.Loggable
-import com.gilt.gfc.util.ExponentialBackoff
+import com.gilt.gfc.util.Retry
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -35,11 +35,15 @@ object KCLRecordProcessorFactory {
     * @param initialize         (ShardId) => Unit : additional code to execute when handler is initialized
     * @param shutdown           (ShardId, Checkpointer, ShutdownReason) => Unit : additional code to execute on shutdown
     * @param processRecords     (ShardId, Records, Checkpointer) => Unit : Kinesis record handler
+    * @param initialDelay       the initial delay value, defaults to 1 millisecond
+    * @param maxDelay           the maximum delay value, defaults to 30 seconds
     */
   def apply( checkpointInterval: FiniteDuration = 5 minutes
            , numRetries: Int = 3
            , initialize: (String) => Unit = (_) => ()
            , shutdown: (String, IRecordProcessorCheckpointer, ShutdownReason) => Unit = (_,_,_) => ()
+           , initialDelay: Duration = 1 millisecond
+           , maxDelay: FiniteDuration = 30 seconds
           )( processRecords: (String, Seq[Record], IRecordProcessorCheckpointer) => Unit
            ): IRecordProcessorFactory = {
 
@@ -49,6 +53,8 @@ object KCLRecordProcessorFactory {
     , initialize
     , shutdown
     , processRecords
+    , initialDelay
+    , maxDelay
     )
   }
 
@@ -61,9 +67,10 @@ object KCLRecordProcessorFactory {
   , doInitialize: (String) => Unit
   , doShutdown: (String, IRecordProcessorCheckpointer, ShutdownReason) => Unit
   , doProcessRecords: (String, Seq[Record], IRecordProcessorCheckpointer) => Unit
+  , initialDelay: Duration
+  , maxDelay: FiniteDuration
 
   ) extends IRecordProcessorFactory
-       with ExponentialBackoff
        with Loggable {
 
     override
@@ -141,23 +148,16 @@ object KCLRecordProcessorFactory {
 
       private[this]
       def doRetry[R]( fun: => R
-                    ): R = retryUpTo(numRetries) {
+                    ): R = Retry.retryWithExponentialDelay(numRetries, initialDelay = initialDelay, maxDelay = maxDelay) {
         try { // Adds shard info to underlying exception, for debugging
           fun
         } catch {
           case NonFatal(e) =>
             throw new KCLProcessorException(s"Kinesis shard: ${myShardId} :: ${e.getMessage}", e)
         }
-      }
+      }(log = e => warn(e.getMessage))
 
     }
-
-
-    override
-    protected def backoffMaxTimeMs: Long = {
-      (30 seconds).toMillis
-    }
-
   }
 
 
