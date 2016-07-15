@@ -35,15 +35,15 @@ object KCLRecordProcessorFactory {
     * @param initialize         (ShardId) => Unit : additional code to execute when handler is initialized
     * @param shutdown           (ShardId, Checkpointer, ShutdownReason) => Unit : additional code to execute on shutdown
     * @param processRecords     (ShardId, Records, Checkpointer) => Unit : Kinesis record handler
-    * @param initialDelay       the initial delay value, defaults to 1 millisecond
-    * @param maxDelay           the maximum delay value, defaults to 30 seconds
+    * @param initialDelay       the initial delay value, defaults to 10 seconds
+    * @param maxDelay           the maximum delay value, defaults to 3 minutes
     */
   def apply( checkpointInterval: FiniteDuration = 5 minutes
            , numRetries: Int = 3
            , initialize: (String) => Unit = (_) => ()
            , shutdown: (String, IRecordProcessorCheckpointer, ShutdownReason) => Unit = (_,_,_) => ()
-           , initialDelay: Duration = 1 millisecond
-           , maxDelay: FiniteDuration = 30 seconds
+           , initialDelay: Duration = 10 seconds
+           , maxDelay: FiniteDuration = 3 minutes
           )( processRecords: (String, Seq[Record], IRecordProcessorCheckpointer) => Unit
            ): IRecordProcessorFactory = {
 
@@ -148,14 +148,17 @@ object KCLRecordProcessorFactory {
 
       private[this]
       def doRetry[R]( fun: => R
-                    ): R = Retry.retryWithExponentialDelay(numRetries, initialDelay = initialDelay, maxDelay = maxDelay) {
-        try { // Adds shard info to underlying exception, for debugging
-          fun
-        } catch {
-          case NonFatal(e) =>
-            throw new KCLProcessorException(s"Kinesis shard: ${myShardId} :: ${e.getMessage}", e)
+                    ): R = {
+        implicit def log(t: Throwable): Unit = warn(t.getMessage)
+        Retry.retryWithExponentialDelay(numRetries, initialDelay = initialDelay, maxDelay = maxDelay) {
+          try { // Adds shard info to underlying exception, for debugging
+            fun
+          } catch {
+            case NonFatal(e) =>
+              throw new KCLProcessorException(s"Kinesis shard: ${myShardId} :: ${e.getMessage}", e)
+          }
         }
-      }(log = e => warn(e.getMessage))
+      }
 
     }
   }
