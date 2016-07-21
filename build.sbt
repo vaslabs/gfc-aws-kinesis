@@ -10,7 +10,7 @@ libraryDependencies ++= Seq(
 "com.gilt"       %% "gfc-util"              % "0.1.1"
 , "com.gilt"     %% "gfc-logging"           % "0.0.3"
 , "com.gilt"     %% "gfc-concurrent"        % "0.2.0"
-, "com.amazonaws" % "aws-java-sdk-kinesis"  % "1.11.14"
+, "com.amazonaws" % "aws-java-sdk-kinesis"  % "1.11.18"
 , "com.amazonaws" % "amazon-kinesis-client" % "1.6.4"
 , "org.specs2"   %% "specs2-scalacheck"     % "3.6.5" % Test
 )
