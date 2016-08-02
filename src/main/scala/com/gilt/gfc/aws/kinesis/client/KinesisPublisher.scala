@@ -243,7 +243,7 @@ class KinesisPublisherImpl (
 
 
   implicit
-  private[this]
+  private
   val executionContext = ExecutionContext.fromExecutor(executor, (e) => error(e.getMessage, e))
 
 
