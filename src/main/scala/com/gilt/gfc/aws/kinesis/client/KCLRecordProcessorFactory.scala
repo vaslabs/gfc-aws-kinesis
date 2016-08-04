@@ -35,15 +35,15 @@ object KCLRecordProcessorFactory {
     * @param initialize         (ShardId) => Unit : additional code to execute when handler is initialized
     * @param shutdown           (ShardId, Checkpointer, ShutdownReason) => Unit : additional code to execute on shutdown
     * @param processRecords     (ShardId, Records, Checkpointer) => Unit : Kinesis record handler
-    * @param initialDelay       the initial delay value, defaults to 10 seconds
-    * @param maxDelay           the maximum delay value, defaults to 3 minutes
+    * @param initialRetryDelay  the initial failed operation retry delay value, defaults to 10 seconds
+    * @param maxRetryDelay      the maximum failed operation retry delay value, defaults to 3 minutes
     */
   def apply( checkpointInterval: FiniteDuration = 5 minutes
            , numRetries: Int = 3
            , initialize: (String) => Unit = (_) => ()
            , shutdown: (String, IRecordProcessorCheckpointer, ShutdownReason) => Unit = (_,_,_) => ()
-           , initialDelay: Duration = 10 seconds
-           , maxDelay: FiniteDuration = 3 minutes
+           , initialRetryDelay: Duration = 10 seconds
+           , maxRetryDelay: FiniteDuration = 3 minutes
           )( processRecords: (String, Seq[Record], IRecordProcessorCheckpointer) => Unit
            ): IRecordProcessorFactory = {
 
@@ -53,8 +53,8 @@ object KCLRecordProcessorFactory {
     , initialize
     , shutdown
     , processRecords
-    , initialDelay
-    , maxDelay
+    , initialRetryDelay
+    , maxRetryDelay
     )
   }
 
@@ -67,8 +67,8 @@ object KCLRecordProcessorFactory {
   , doInitialize: (String) => Unit
   , doShutdown: (String, IRecordProcessorCheckpointer, ShutdownReason) => Unit
   , doProcessRecords: (String, Seq[Record], IRecordProcessorCheckpointer) => Unit
-  , initialDelay: Duration
-  , maxDelay: FiniteDuration
+  , initialRetryDelay: Duration
+  , maxRetryDelay: FiniteDuration
 
   ) extends IRecordProcessorFactory
        with Loggable {
@@ -111,10 +111,9 @@ object KCLRecordProcessorFactory {
       override
       def processRecords( recordsJList: jul.List[Record]
                         , checkpointer: IRecordProcessorCheckpointer
-                        ): Unit = doRetry {
+                        ): Unit = {
 
         val records: Seq[Record] = recordsJList.asScala
-
         debug(s"Processing ${records.size} records from shard ${myShardId}")
 
         try {
@@ -129,7 +128,7 @@ object KCLRecordProcessorFactory {
 
         // Checkpoint periodically
         if ( System.currentTimeMillis - lastCheckpointTimestamp > checkpointIntervalMillis ) {
-          doCheckpoint(checkpointer)
+          doRetry{ doCheckpoint(checkpointer) }
         }
       }
 
@@ -150,7 +149,7 @@ object KCLRecordProcessorFactory {
       def doRetry[R]( fun: => R
                     ): R = {
         implicit def log(t: Throwable): Unit = warn(t.getMessage)
-        Retry.retryWithExponentialDelay(numRetries, initialDelay = initialDelay, maxDelay = maxDelay) {
+        Retry.retryWithExponentialDelay(numRetries, initialDelay = initialRetryDelay, maxDelay = maxRetryDelay) {
           try { // Adds shard info to underlying exception, for debugging
             fun
           } catch {

@@ -22,7 +22,9 @@ import scala.util.{Failure, Success, Try}
  * @param numRetries         how many times to retry operation on exception before giving up
  * @param initialize         (ShardId) => Unit : additional code to execute when handler is initialized
  * @param shutdown           (ShardId, Checkpointer, ShutdownReason) => Unit : additional code to execute on shutdown
- *
+ * @param metricsFactory     CloudWatch metrics factory
+ * @param initialRetryDelay  the initial failed operation retry delay value, defaults to 10 seconds
+ * @param maxRetryDelay      the maximum failed operation retry delay value, defaults to 3 minutes
  */
 case class KCLWorkerRunner (
   config: KinesisClientLibConfiguration
@@ -31,6 +33,8 @@ case class KCLWorkerRunner (
 , initialize: (String) => Unit = (_) => ()
 , shutdown: (String, IRecordProcessorCheckpointer, ShutdownReason) => Unit = (_,_,_) => ()
 , metricsFactory: Option[IMetricsFactory] = None
+, initialRetryDelay: Duration = 10 seconds
+, maxRetryDelay: FiniteDuration = 3 minutes
 ) extends Loggable {
 
   /** Override default checkpointInterval. */
@@ -80,10 +84,12 @@ case class KCLWorkerRunner (
     try {
 
       val recordProcessorFactory = KCLRecordProcessorFactory(
-        checkpointInterval
-      , numRetries
-      , initialize
-      , shutdown
+        checkpointInterval = checkpointInterval
+      , numRetries = numRetries
+      , initialize = initialize
+      , shutdown = shutdown
+      , initialRetryDelay = initialRetryDelay
+      , maxRetryDelay = maxRetryDelay
       ) { (shardId, records, checkpointer) =>
 
         val (as,errs) = records.map(tryToConvertRecord[A] _).partition(_.isSuccess)
