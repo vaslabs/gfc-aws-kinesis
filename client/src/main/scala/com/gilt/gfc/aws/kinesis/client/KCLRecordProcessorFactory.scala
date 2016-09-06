@@ -58,7 +58,6 @@ object KCLRecordProcessorFactory {
     )
   }
 
-
   private
   class IRecordProcessorFactoryImpl(
 
