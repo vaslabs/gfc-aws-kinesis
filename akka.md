@@ -12,13 +12,15 @@ For already materialized stream
       
     val streamConfig = KinesisStreamConsumerConfig[MyRecordType](
       "my-test-stream",
-      "kinesis-consumer-service-1",
-      bytes => JsonParser(bytes).convertTo[MyRecordType]
+      "kinesis-consumer-service-1"
     )
     
     val consumer = new KinesisStreamConsumer[MyRecordType](
       streamConfig,
-      KinesisStreamHandler(KinesisStreamSource.pumpKinesisStreamTo(flow, 10.second))
+      KinesisStreamHandler(
+        bytes => JsonParser(bytes).convertTo[MyRecordType],
+        KinesisStreamSource.pumpKinesisStreamTo(flow, 10.second)
+      )
     )
 
     val ec = Executors.newSingleThreadExecutor()
@@ -36,12 +38,12 @@ For not yet materialized stream
 
     val streamConfig = KinesisStreamConsumerConfig[MyRecordType](
       "my-test-stream",
-      "kinesis-consumer-service-2",
-      bytes => JsonParser(bytes).convertTo[MyRecordType]
+      "kinesis-consumer-service-2"      
     )
     
     val kinesisSource = KinesisStreamSource(
       streamConfig,
+      bytes => JsonParser(bytes).convertTo[MyRecordType],
       10.second
     )
 

@@ -5,9 +5,9 @@ import com.gilt.gfc.aws.kinesis.client.{KCLConfiguration, KCLWorkerRunner, Kines
 
 class KinesisStreamConsumer[T](
   streamConfig: KinesisStreamConsumerConfig[T],
-  val handler: KinesisStreamHandler[T]
+  handler: KinesisStreamHandler[T]
 ) {
-  val kclConfig = KCLConfiguration(
+  private val kclConfig = KCLConfiguration(
     streamConfig.applicationName,
     streamConfig.streamName,
     streamConfig.kinesisCredentialsProvider,
@@ -15,7 +15,7 @@ class KinesisStreamConsumer[T](
     streamConfig.cloudWatchCredentialsProvider
   )
 
-  def createWorker = KCLWorkerRunner(
+  private def createWorker = KCLWorkerRunner(
     kclConfig,
     metricsFactory = Some(streamConfig.metricsFactory),
     checkpointInterval = streamConfig.checkPointInterval,
@@ -26,10 +26,13 @@ class KinesisStreamConsumer[T](
     numRetries = streamConfig.retryConfig.maxRetries
   )
 
-  implicit val messageDeserializer = new KinesisRecordReader[T] {
-    override def apply(r: Record): T = streamConfig.recordDeserializer(r.getData.array())
+  private implicit val messageDeserializer = new KinesisRecordReader[T] {
+    override def apply(r: Record): T = handler.deserialize(r)
   }
 
+  /***
+    * Creates the worker and runs it
+    */
   def run() = {
     val worker = createWorker
     worker.runSingleRecordProcessor(handler.onRecord)
