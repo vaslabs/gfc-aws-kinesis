@@ -1,11 +1,12 @@
 package com.gilt.gfc.aws.kinesis.akka
 
-import com.amazonaws.services.kinesis.model.Record
 import com.gilt.gfc.aws.kinesis.client.{KCLConfiguration, KCLWorkerRunner, KinesisRecordReader}
 
 class KinesisStreamConsumer[T](
   streamConfig: KinesisStreamConsumerConfig[T],
   handler: KinesisStreamHandler[T]
+) (
+  implicit private val evReader: KinesisRecordReader[T]
 ) {
   private val kclConfig = KCLConfiguration(
     streamConfig.applicationName,
@@ -25,10 +26,6 @@ class KinesisStreamConsumer[T](
     maxRetryDelay = streamConfig.retryConfig.retryDelay,
     numRetries = streamConfig.retryConfig.maxRetries
   )
-
-  private implicit val messageDeserializer = new KinesisRecordReader[T] {
-    override def apply(r: Record): T = handler.deserialize(r)
-  }
 
   /***
     * Creates the worker and runs it

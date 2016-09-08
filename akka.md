@@ -5,6 +5,9 @@ com.gilt.gfc.aws.kinesis.akka is a library to create akka stream Source out of K
 For already materialized stream
 
 ```scala
+    /// Assuming we're using spray.json
+    implicit val evReader = KinesisRecordReader(r => JsonParser(r.getData.array()).convertTo[MyRecordType])
+
     val flow = Source.queue[MyRecordType](0, OverflowStrategy.backpressure)
       .map(x => s"Flow got message $x")
       .to(Sink.foreach(println))
@@ -18,7 +21,6 @@ For already materialized stream
     val consumer = new KinesisStreamConsumer[MyRecordType](
       streamConfig,
       KinesisStreamHandler(
-        bytes => JsonParser(bytes).convertTo[MyRecordType],
         KinesisStreamSource.pumpKinesisStreamTo(flow, 10.second)
       )
     )
@@ -32,6 +34,9 @@ For already materialized stream
 For not yet materialized stream
 
 ```scala
+    /// Assuming we're using spray.json
+    implicit val evReader = KinesisRecordReader(r => JsonParser(r.getData.array()).convertTo[MyRecordType])
+
     val flow = Flow[MyRecordType]
       .map(x => s"Flow got message $x")
       .to(Sink.foreach(println))
@@ -43,7 +48,6 @@ For not yet materialized stream
     
     val kinesisSource = KinesisStreamSource(
       streamConfig,
-      bytes => JsonParser(bytes).convertTo[MyRecordType],
       10.second
     )
 

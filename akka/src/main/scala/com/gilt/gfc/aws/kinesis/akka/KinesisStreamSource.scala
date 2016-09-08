@@ -3,6 +3,7 @@ package com.gilt.gfc.aws.kinesis.akka
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Source, SourceQueue}
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer
+import com.gilt.gfc.aws.kinesis.client.KinesisRecordReader
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -24,17 +25,19 @@ object KinesisStreamSource {
     * Upon materialization it will create a kinesis worker, and start consuming the Kinesis stream,
     * pumping messages to the underlying flow
     * @param streamConfig Configuration of the Kinesis stream to consume
-    * @param deserializer Deserializer function for messages
     * @param pumpingTimeoutDuration Duration that source will wait for the akka stream to process message
+    * @param evReader Deserialization typeclass
+    * @return akka Source that on materialization gets messages from Kinesis stream and pump them through the flow
     */
   def apply[T](
     streamConfig: KinesisStreamConsumerConfig[T],
-    deserializer: Array[Byte] => T,
     pumpingTimeoutDuration: Duration = Duration.Inf
+  ) (
+    implicit evReader: KinesisRecordReader[T]
   ) = {
     Source.queue[T](0, OverflowStrategy.backpressure)
       .mapMaterializedValue(queue => {
-        val consumer = new KinesisStreamConsumer[T](streamConfig, KinesisStreamHandler(deserializer, pumpKinesisStreamTo(queue, pumpingTimeoutDuration)))
+        val consumer = new KinesisStreamConsumer[T](streamConfig, KinesisStreamHandler(pumpKinesisStreamTo(queue, pumpingTimeoutDuration)))
         consumer.run
       })
   }
