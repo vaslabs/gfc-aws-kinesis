@@ -1,57 +1,78 @@
-name := "gfc-aws-kinesis"
+val commonSettings = Seq(
+  scalaVersion := "2.11.8",
+  organization := "com.gilt",
+  crossScalaVersions := Seq("2.11.8", "2.10.5"),
 
-organization := "com.gilt"
+  releaseCrossBuild := true,
 
-scalaVersion := "2.11.8"
+  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
 
-crossScalaVersions := Seq("2.11.8", "2.10.5")
+  publishMavenStyle := true,
 
-libraryDependencies ++= Seq(
-"com.gilt"       %% "gfc-util"              % "0.1.1"
-, "com.gilt"     %% "gfc-logging"           % "0.0.3"
-, "com.gilt"     %% "gfc-concurrent"        % "0.2.0"
-, "com.amazonaws" % "aws-java-sdk-kinesis"  % "1.11.18"
-, "com.amazonaws" % "amazon-kinesis-client" % "1.6.4"
-, "org.specs2"   %% "specs2-scalacheck"     % "3.6.5" % Test
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+  },
+
+  publishArtifact in Test := false,
+
+  pomIncludeRepository := { _ => false },
+
+  licenses := Seq("Apache-style" -> url("https://raw.githubusercontent.com/gilt/gfc-aws-kinesis/master/LICENSE")),
+
+  homepage := Some(url("https://github.com/gilt/gfc-aws-kinesis")),
+
+  pomExtra := (
+    <scm>
+      <url>https://github.com/gilt/gfc-aws-kinesis.git</url>
+      <connection>scm:git:git@github.com:gilt/gfc-aws-kinesis.git</connection>
+    </scm>
+    <developers>
+      <developer>
+        <id>andreyk0</id>
+        <name>Andrey Kartashov</name>
+        <url>https://github.com/andreyk0</url>
+      </developer>
+      <developer>
+        <id>krschultz</id>
+        <name>Kevin Schultz</name>
+        <url>https://github.com/krschultz</url>
+      </developer>
+      <developer>
+        <id>mikegirkin</id>
+        <name>Mike Girkin</name>
+        <url>https://github.com/mikegirkin</url>
+      </developer>
+    </developers>
+  )
+
 )
 
-releaseCrossBuild := true
-
-releasePublishArtifactsAction := PgpKeys.publishSigned.value
-
-publishMavenStyle := true
-
-publishTo := {
-  val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value)
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  else
-    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-}
-
-publishArtifact in Test := false
-
-pomIncludeRepository := { _ => false }
-
-licenses := Seq("Apache-style" -> url("https://raw.githubusercontent.com/gilt/gfc-aws-kinesis/master/LICENSE"))
-
-homepage := Some(url("https://github.com/gilt/gfc-aws-kinesis"))
-
-pomExtra := (
-  <scm>
-    <url>https://github.com/gilt/gfc-aws-kinesis.git</url>
-    <connection>scm:git:git@github.com:gilt/gfc-aws-kinesis.git</connection>
-  </scm>
-  <developers>
-    <developer>
-      <id>andreyk0</id>
-      <name>Andrey Kartashov</name>
-      <url>https://github.com/andreyk0</url>
-    </developer>
-    <developer>
-      <id>krschultz</id>
-      <name>Kevin Schultz</name>
-      <url>https://github.com/krschultz</url>
-    </developer>
-  </developers>
+lazy val client = (project in file("client"))
+  .settings(commonSettings:_*)
+  .settings(
+  name := "gfc-aws-kinesis",
+  libraryDependencies ++= Seq(
+    "com.gilt"      %% "gfc-util"              % "0.1.1",
+    "com.gilt"      %% "gfc-logging"           % "0.0.3",
+    "com.gilt"      %% "gfc-concurrent"        % "0.2.0",
+    "com.amazonaws" %  "aws-java-sdk-kinesis"  % "1.11.18",
+    "com.amazonaws" %  "amazon-kinesis-client" % "1.6.4",
+    "org.specs2"    %% "specs2-scalacheck"     % "3.6.5" % Test
+  )
 )
+
+lazy val akka = (project in file("akka"))
+  .settings(commonSettings:_*)
+  .settings(
+    name := "gfc-aws-kinesis-akka",
+    libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.4.9")
+  .dependsOn(client)
+
+lazy val root = (project in file("."))
+  .settings(commonSettings: _*)
+  .settings(publishArtifact := false)
+  .aggregate(client, akka)

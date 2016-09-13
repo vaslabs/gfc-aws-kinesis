@@ -7,3 +7,9 @@ import com.amazonaws.services.kinesis.model.Record
 trait KinesisRecordReader[A] {
   def apply(r: Record): A
 }
+
+object KinesisRecordReader {
+  def apply[A](deserializer: Record => A): KinesisRecordReader[A] = new KinesisRecordReader[A] {
+    override def apply(r: Record): A = deserializer(r)
+  }
+}
