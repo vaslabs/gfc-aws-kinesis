@@ -14,7 +14,7 @@ import com.gilt.gfc.logging.Loggable
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.{FiniteDuration, _}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Future, ExecutionContext, ExecutionContextExecutor}
 import scala.language.postfixOps
 import scala.util.Random
 import scala.util.control.NonFatal
@@ -244,7 +244,7 @@ class KinesisPublisherImpl (
 
   implicit
   private
-  val executionContext = ExecutionContext.fromExecutor(executor, (e) => error(e.getMessage, e))
+  val executionContext: ExecutionContext = ExecutionContext.fromExecutor(executor, (e) => error(e.getMessage, e))
 
 
   private[this]

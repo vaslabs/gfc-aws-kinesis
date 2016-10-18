@@ -1,5 +1,6 @@
 val commonSettings = Seq(
   scalaVersion := "2.11.8",
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.0-RC1"),
   organization := "com.gilt",
 
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
@@ -53,9 +54,9 @@ lazy val client = (project in file("client"))
   .settings(
   name := "gfc-aws-kinesis",
   libraryDependencies ++= Seq(
-    "com.gilt"      %% "gfc-util"              % "0.1.5",
-    "com.gilt"      %% "gfc-logging"           % "0.0.5",
-    "com.gilt"      %% "gfc-concurrent"        % "0.3.3",
+    "com.gilt"      %% "gfc-util"              % "0.1.6",
+    "com.gilt"      %% "gfc-logging"           % "0.0.6",
+    "com.gilt"      %% "gfc-concurrent"        % "0.3.4",
     "com.amazonaws" %  "aws-java-sdk-kinesis"  % "1.11.18",
     "com.amazonaws" %  "amazon-kinesis-client" % "1.7.0",
     "org.specs2"    %% "specs2-scalacheck"     % "3.8.5" % Test
