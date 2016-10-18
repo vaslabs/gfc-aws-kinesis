@@ -8,13 +8,13 @@ The latest version is 0.10.1, which is cross-built against Scala 2.11.x and 2.12
 SBT dependency:
 
 ```scala
-libraryDependencies += "com.gilt" % "gfc-aws-kinesis" % "0.10.1"
+libraryDependencies += "com.gilt" %% "gfc-aws-kinesis" % "0.10.1"
 ```
 
 SBT Akka stream dependency:
 
 ```scala
-libraryDependencies += "com.gilt" % "gfc-aws-kinesis-akka" % "0.10.1"
+libraryDependencies += "com.gilt" %% "gfc-aws-kinesis-akka" % "0.10.1"
 ```
 
 # Basic usage
