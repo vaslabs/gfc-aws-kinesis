@@ -3,6 +3,8 @@ val commonSettings = Seq(
   crossScalaVersions := Seq(scalaVersion.value, "2.12.0-RC1"),
   organization := "com.gilt",
 
+  releaseCrossBuild := true,
+
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
 
   publishMavenStyle := true,
