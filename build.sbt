@@ -1,6 +1,6 @@
 val commonSettings = Seq(
   scalaVersion := "2.11.8",
-  crossScalaVersions := Seq(scalaVersion.value, "2.12.0-RC1"),
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.0"),
   organization := "com.gilt",
 
   releaseCrossBuild := true,
@@ -56,12 +56,12 @@ lazy val client = (project in file("client"))
   .settings(
   name := "gfc-aws-kinesis",
   libraryDependencies ++= Seq(
-    "com.gilt"      %% "gfc-util"              % "0.1.6",
-    "com.gilt"      %% "gfc-logging"           % "0.0.6",
-    "com.gilt"      %% "gfc-concurrent"        % "0.3.4",
+    "com.gilt"      %% "gfc-util"              % "0.1.7",
+    "com.gilt"      %% "gfc-logging"           % "0.0.7",
+    "com.gilt"      %% "gfc-concurrent"        % "0.3.5",
     "com.amazonaws" %  "aws-java-sdk-kinesis"  % "1.11.18",
     "com.amazonaws" %  "amazon-kinesis-client" % "1.7.0",
-    "org.specs2"    %% "specs2-scalacheck"     % "3.8.5" % Test
+    "org.specs2"    %% "specs2-scalacheck"     % "3.8.6" % Test
   )
 )
 
@@ -69,7 +69,7 @@ lazy val akka = (project in file("akka"))
   .settings(commonSettings:_*)
   .settings(
     name := "gfc-aws-kinesis-akka",
-    libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.4.10")
+    libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.4.12")
   .dependsOn(client)
 
 lazy val root = (project in file("."))
