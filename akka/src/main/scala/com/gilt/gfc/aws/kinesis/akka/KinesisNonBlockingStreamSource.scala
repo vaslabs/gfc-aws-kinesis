@@ -32,17 +32,18 @@ object KinesisNonBlockingStreamSource {
     * @return akka Source that on materialization gets messages from Kinesis stream and pump them through the flow
     */
   def apply[T](
-    streamConfig: KinesisStreamConsumerConfig[T],
-    pumpingTimeoutDuration: Duration = Duration.Inf,
-    executionContext: ExecutionContext
-  ) (
-    implicit evReader: KinesisRecordReader[T]
-  ) = {
-    Source.queue[T](0, OverflowStrategy.backpressure)
+                streamConfig: KinesisStreamConsumerConfig[T],
+                pumpingTimeoutDuration: Duration = Duration.Inf,
+                bufferSize : Int = 0,
+                overflowStrategy: OverflowStrategy = OverflowStrategy.backpressure
+              ) (
+                implicit evReader: KinesisRecordReader[T],
+                ec : ExecutionContext) = {
+    Source.queue[T](bufferSize, overflowStrategy)
       .mapMaterializedValue(queue => {
         val consumer = new KinesisStreamConsumer[T](streamConfig, KinesisStreamHandler(pumpKinesisStreamTo(queue, pumpingTimeoutDuration)))
-        implicit val ec = executionContext
-        Future(consumer.run) //this is a future so stream materialization will not block
+        Future(consumer.run) //if this wasn't a future, then materializing this source would block
       })
   }
+
 }
