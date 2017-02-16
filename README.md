@@ -24,15 +24,28 @@ Consume events:
 
 ```scala
 
-  implicit object ARecordReader extends KinesisRecordReader[A]{
-    override def apply(r: Record) : A = {
-     // parse A
-    }
+  implicit object StringRecordReader extends KinesisRecordReader[String]{
+    override def apply(r: Record) : String = new String(r.data, "UTF-8")
   }
 
-  val config = DefaultKCLConfiguration("consumer-name", "kinesis-stream-name")
+  val config = KCLConfiguration("consumer-name", "kinesis-stream-name")
 
-  KCLWorkerRunner(config).runAsyncSingleRecordProcessor[A](1 minute) { a: A =>
+  KCLWorkerRunner(config).runAsyncSingleRecordProcessor[A](1 minute) { a: String =>
      // .. do something with A
   }
+```
+
+Publish events:
+
+```scala
+
+  implicit object StringRecordWriter extends KinesisRecordWriter[String]{
+    override def toKinesisRecord(a: String) : KinesisRecord = KinesisRecord("partition-key", a.getBytes("UTF-8")) 
+  }
+
+  val publisher = KinesisPublisher()
+  
+  val messages = Seq("Hello World!", "foo bar", "baz bam")
+  
+  val result: Future[KinesisPublisherBatchResult] = publisher.publishBatch("kinesis-stream-name", messages)
 ```
