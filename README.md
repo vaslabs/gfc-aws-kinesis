@@ -25,7 +25,7 @@ Consume events:
 ```scala
 
   implicit object StringRecordReader extends KinesisRecordReader[String]{
-    override def apply(r: Record) : String = new String(r.data, "UTF-8")
+    override def apply(r: Record) : String = new String(r.data.array(), "UTF-8")
   }
 
   val config = KCLConfiguration("consumer-name", "kinesis-stream-name")
@@ -39,8 +39,10 @@ Publish events:
 
 ```scala
 
-  implicit object StringRecordWriter extends KinesisRecordWriter[String]{
-    override def toKinesisRecord(a: String) : KinesisRecord = KinesisRecord("partition-key", a.getBytes("UTF-8")) 
+  implicit object StringRecordWriter extends KinesisRecordWriter[String] {
+    override def toKinesisRecord(a: String) : KinesisRecord = {
+      KinesisRecord("partition-key", a.getBytes("UTF-8")) 
+    }
   }
 
   val publisher = KinesisPublisher()
