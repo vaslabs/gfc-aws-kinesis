@@ -13,7 +13,8 @@ class KinesisStreamConsumer[T](
     streamConfig.streamName,
     streamConfig.kinesisCredentialsProvider,
     streamConfig.dynamoCredentialsProvider,
-    streamConfig.cloudWatchCredentialsProvider
+    streamConfig.cloudWatchCredentialsProvider,
+    streamConfig.regionName
   )
 
   private def createWorker = KCLWorkerRunner(

@@ -35,6 +35,7 @@ object KCLConfiguration {
            , kinesisCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , dynamoCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , cloudWatchCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+           , regionName: Option[String] = None
            ): KinesisClientLibConfiguration = {
 
     new KinesisClientLibConfiguration(
@@ -46,6 +47,6 @@ object KCLConfiguration {
     , dynamoCredentialsProvider
     , cloudWatchCredentialsProvider
     , s"${HostName}:${UUID.randomUUID()}"
-    )
+    ).withRegionName(regionName.orNull)
   }
 }
