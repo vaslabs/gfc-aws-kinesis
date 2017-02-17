@@ -1,11 +1,9 @@
 package com.gilt.gfc.aws.kinesis.client
 
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer
-import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorFactory
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{KinesisClientLibConfiguration, Worker}
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason
 import com.amazonaws.services.kinesis.metrics.interfaces.IMetricsFactory
-import com.amazonaws.services.kinesis.model.Record
 import com.gilt.gfc.logging.Loggable
 
 import scala.concurrent.duration._
@@ -92,7 +90,7 @@ case class KCLWorkerRunner (
       , maxRetryDelay = maxRetryDelay
       ) { (shardId, records, checkpointer) =>
 
-        val (as,errs) = records.map(tryToConvertRecord[A] _).partition(_.isSuccess)
+        val (as,errs) = records.map(r => tryToConvertRecord[A](ReadRecord(r))).partition(_.isSuccess)
 
         // process what we could parse, if this call throws an exception - the whole batch will be retried
         processRecords(shardId, as.map(_.get), checkpointer)
@@ -144,9 +142,9 @@ case class KCLWorkerRunner (
                                       ,          evReader: KinesisRecordReader[A]
                                       ): Unit = {
 
-    runBatchProcessor[Record]({ (shardId, records, checkpointer) =>
+    runBatchProcessor[ReadRecord]({ (shardId, records, checkpointer) =>
 
-      val resFutures: Future[Seq[(Record, Try[Unit])]] = Future.traverse(records) { r =>
+      val resFutures: Future[Seq[(ReadRecord, Try[Unit])]] = Future.traverse(records) { r =>
 
         debug(s"Got ${r.toString} from kinesis shard ${shardId}")
 
@@ -155,7 +153,7 @@ case class KCLWorkerRunner (
             Future.successful(r -> Failure(e))
 
           case Success(a) =>
-            val res : Future[(Record, Try[Unit])] = processRecord(a) map (_ => r -> Success(Unit))
+            val res : Future[(ReadRecord, Try[Unit])] = processRecord(a) map (_ => r -> Success(Unit))
 
             res recover {
               case NonFatal(e) => r -> Failure(e)
@@ -189,11 +187,11 @@ case class KCLWorkerRunner (
 
   /** Adds a bit more context to failed attempts to convert kinesis records. */
   private[this]
-  def tryToConvertRecord[A](r: Record
+  def tryToConvertRecord[A](r: ReadRecord
                           )( implicit evReader: KinesisRecordReader[A]
                            ): Try[A] = {
 
-    val copyOfTheData = r.getData.duplicate // they are mutable, can only read once, see hexData
+    val copyOfTheData = r.underlying.getData.duplicate // they are mutable, can only read once, see hexData
 
     try {
       Success(evReader(r))
@@ -206,14 +204,14 @@ case class KCLWorkerRunner (
 
 
 case class KCLWorkerRunnerRecordConversionException(
-  record: Record
+  record: ReadRecord
 , hexData: String
 , cause: Throwable
 ) extends RuntimeException(s"Failed to convert ${record} to required type: ${cause.getMessage} :: DATA: ${hexData}", cause)
 
 
 case class KCLWorkerRunnerRecordProcessingException(
-  record: Record
+  record: ReadRecord
 , shardId: String
 , cause: Throwable
 ) extends RuntimeException(s"Failed to process ${record} from shard ${shardId}: ${cause.getMessage}", cause)

@@ -1,6 +1,5 @@
 package com.gilt.gfc.aws.kinesis.client
 
-import java.nio.ByteBuffer
 import java.util.concurrent._
 
 import com.amazonaws.ClientConfigurationFactory
@@ -14,7 +13,7 @@ import com.gilt.gfc.logging.Loggable
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.{FiniteDuration, _}
-import scala.concurrent.{Future, ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent.{Future, ExecutionContext}
 import scala.language.postfixOps
 import scala.util.Random
 import scala.util.control.NonFatal
@@ -51,8 +50,7 @@ trait KinesisPublisher {
   /** Publishes record batch, asynchronously, this call returns immediately
     * and simply schedules a 'fire and forget' call to kinesis.
     */
-  def publishBatch[R]( streamName: String
-                     , records: Iterable[R]
+  def publishBatch[R](records: Iterable[R]
                     )( implicit ev: KinesisRecordWriter[R]
                      ): Future[KinesisPublisherBatchResult]
 
@@ -70,20 +68,23 @@ object KinesisPublisher {
 
   /** Constructs KinesisPublisher.
     *
+    * @param streamName               kinesis stream
     * @param maxErrorRetryCount       how many times to retry in the case of publishing errors
     * @param threadPoolSize           we make synchronous requests to kinesis, this determines parallelism
     * @param awsCredentialsProvider   override default credentials provider
     */
-  def apply( maxErrorRetryCount: Int = 10
+  def apply( streamName: String
+           , maxErrorRetryCount: Int = 10
            , threadPoolSize: Int = 8
            , awsCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
-           ): KinesisPublisher = new KinesisPublisherImpl(maxErrorRetryCount, threadPoolSize, awsCredentialsProvider)
+           ): KinesisPublisher = new KinesisPublisherImpl(streamName, maxErrorRetryCount, threadPoolSize, awsCredentialsProvider)
 }
 
 
 private[client]
 class KinesisPublisherImpl (
-  maxErrorRetryCount: Int
+  streamName: String
+, maxErrorRetryCount: Int
 , threadPoolSize: Int
 , awsCredentialsProvider: AWSCredentialsProvider
 ) extends KinesisPublisher
@@ -91,21 +92,19 @@ class KinesisPublisherImpl (
 
   /** Publishes a batch of records to kinesis.
     *
-    * @param streamName  kinesis stream
     * @param records     records (must have an associated implementation of KinesisRecordWriter)
     * @param krw         a writer implementation for submitted record type
     * @tparam R          record type
     * @return            Batch result with the call stats
     */
   override
-  def publishBatch[R]( streamName: String
-                     , records: Iterable[R]
+  def publishBatch[R](records: Iterable[R]
                     )( implicit krw: KinesisRecordWriter[R]
                     ): Future[KinesisPublisherBatchResult] = {
 
     Future { // closes over input and adds a task to the thread pool
       try {
-        putRecords(streamName, prepareRequestEntries(records).toSeq)
+        putRecords(streamName, records.map(krw(_).underlying).toSeq)
       } catch {
         case e: Throwable =>
           error(s"Kinesis call to publish batch to ${streamName} failed: ${e.getMessage}", e)
@@ -245,20 +244,4 @@ class KinesisPublisherImpl (
   implicit
   private
   val executionContext: ExecutionContext = ExecutionContext.fromExecutor(executor, (e) => error(e.getMessage, e))
-
-
-  private[this]
-  def prepareRequestEntries[R]( records: Iterable[R]
-                             )( implicit krw: KinesisRecordWriter[R]
-                              ): Iterable[PutRecordsRequestEntry] = {
-    for ( r <- records ) yield {
-
-      val KinesisRecord(partitionKey, data) = krw.toKinesisRecord(r)
-      val bb = ByteBuffer.wrap(data, 0, data.length)
-
-      new PutRecordsRequestEntry().
-        withData(bb).
-        withPartitionKey(partitionKey)
-    }
-  }
 }
