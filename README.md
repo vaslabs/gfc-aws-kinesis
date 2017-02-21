@@ -4,18 +4,18 @@ Scala wrapper around AWS Kinesis Client Library. Part of the [Gilt Foundation Cl
 
 ## Getting gfc-aws-kinesis
 
-The latest version is 0.10.2, which is cross-built against Scala 2.11.x and 2.12.x.
+The latest version is 0.10.3, which is cross-built against Scala 2.11.x and 2.12.x.
 
 SBT dependency:
 
 ```scala
-libraryDependencies += "com.gilt" %% "gfc-aws-kinesis" % "0.10.2"
+libraryDependencies += "com.gilt" %% "gfc-aws-kinesis" % "0.10.3"
 ```
 
 SBT Akka stream dependency:
 
 ```scala
-libraryDependencies += "com.gilt" %% "gfc-aws-kinesis-akka" % "0.10.2"
+libraryDependencies += "com.gilt" %% "gfc-aws-kinesis-akka" % "0.10.3"
 ```
 
 # Basic usage
@@ -41,13 +41,13 @@ Publish events:
 
   implicit object StringRecordWriter extends KinesisRecordWriter[String] {
     override def toKinesisRecord(a: String) : KinesisRecord = {
-      KinesisRecord("partition-key", a.getBytes("UTF-8")) 
+      KinesisRecord("partition-key", a.getBytes("UTF-8"))
     }
   }
 
   val publisher = KinesisPublisher()
-  
+
   val messages = Seq("Hello World!", "foo bar", "baz bam")
-  
+
   val result: Future[KinesisPublisherBatchResult] = publisher.publishBatch("kinesis-stream-name", messages)
 ```
