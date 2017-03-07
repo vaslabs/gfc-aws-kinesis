@@ -231,7 +231,8 @@ class KinesisPublisherImpl (
     val conf = cf.getConfig.withRetryPolicy(rp)
 
     val client = new AmazonKinesisClient(awsCredentialsProvider, conf)
-    awsRegion.fold(client)(region => client.withRegion(region))
+    awsRegion.foreach(region => client.setRegion(region))
+    client
   }
 
 
