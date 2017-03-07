@@ -3,10 +3,12 @@ package com.gilt.gfc.aws.kinesis.client
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorFactory
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{KinesisClientLibConfiguration, Worker}
-import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.ShutdownReason
 import com.amazonaws.services.kinesis.metrics.interfaces.IMetricsFactory
 import com.amazonaws.services.kinesis.model.Record
 import com.gilt.gfc.logging.Loggable
+
+import java.util.concurrent.TimeUnit
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -36,6 +38,8 @@ case class KCLWorkerRunner (
 , initialRetryDelay: Duration = 10 seconds
 , maxRetryDelay: FiniteDuration = 3 minutes
 ) extends Loggable {
+
+  private[this] var workers = List[Worker]()
 
   /** Override default checkpointInterval. */
   def withCheckpointInterval( cpi: FiniteDuration
@@ -73,6 +77,25 @@ case class KCLWorkerRunner (
   }
 
   /**
+   * Request graceful shutdown of all Kinesis workers.
+   *
+   * @param callbackTimeout   how long to wait for shutdown to complete
+   */
+  def shutdown(timeout: Duration = 1.minute): Unit = {
+    val javaFutures = synchronized {
+      val r = workers.map(_.requestShutdown)
+      workers = Nil
+      r
+    }
+    if (timeout.isFinite) {
+      val endTime = System.nanoTime + timeout.toNanos
+      javaFutures.foreach(_.get(endTime - System.nanoTime, TimeUnit.NANOSECONDS))
+    } else {
+      javaFutures.foreach(_.get)
+    }
+  }
+
+  /**
    * Run KCL worker with the given callback.
    *
    * @param processRecords     (ShardId, Records, Checkpointer) => Unit : Kinesis record handler
@@ -105,6 +128,9 @@ case class KCLWorkerRunner (
         new Worker(recordProcessorFactory, config))(
         mf => new Worker(recordProcessorFactory, config, mf))
 
+      synchronized {
+        workers ::= worker
+      }
       worker.run()
 
     } catch {

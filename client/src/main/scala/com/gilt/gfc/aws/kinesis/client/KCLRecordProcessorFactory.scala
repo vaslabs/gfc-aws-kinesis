@@ -3,7 +3,7 @@ package com.gilt.gfc.aws.kinesis.client
 import java.{util => jul}
 
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.{IRecordProcessor, IRecordProcessorCheckpointer, IRecordProcessorFactory}
-import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.ShutdownReason
 import com.amazonaws.services.kinesis.model.Record
 import com.gilt.gfc.logging.Loggable
 import com.gilt.gfc.util.Retry
