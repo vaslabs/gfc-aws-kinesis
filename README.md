@@ -4,18 +4,18 @@ Scala wrapper around AWS Kinesis Client Library. Part of the [Gilt Foundation Cl
 
 ## Getting gfc-aws-kinesis
 
-The latest version is 0.10.3, which is cross-built against Scala 2.11.x and 2.12.x.
+The latest version is 0.11.0, which is cross-built against Scala 2.11.x and 2.12.x.
 
 SBT dependency:
 
 ```scala
-libraryDependencies += "com.gilt" %% "gfc-aws-kinesis" % "0.10.3"
+libraryDependencies += "com.gilt" %% "gfc-aws-kinesis" % "0.11.0"
 ```
 
 SBT Akka stream dependency:
 
 ```scala
-libraryDependencies += "com.gilt" %% "gfc-aws-kinesis-akka" % "0.10.3"
+libraryDependencies += "com.gilt" %% "gfc-aws-kinesis-akka" % "0.11.0"
 ```
 
 # Basic usage
