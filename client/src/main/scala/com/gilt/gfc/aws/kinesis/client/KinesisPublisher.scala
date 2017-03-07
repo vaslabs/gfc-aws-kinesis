@@ -5,6 +5,7 @@ import java.util.concurrent._
 
 import com.amazonaws.ClientConfigurationFactory
 import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProviderChain}
+import com.amazonaws.regions.Region
 import com.amazonaws.retry.PredefinedRetryPolicies
 import com.amazonaws.services.kinesis.AmazonKinesisClient
 import com.amazonaws.services.kinesis.model.{PutRecordsRequest, PutRecordsRequestEntry}
@@ -77,7 +78,8 @@ object KinesisPublisher {
   def apply( maxErrorRetryCount: Int = 10
            , threadPoolSize: Int = 8
            , awsCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
-           ): KinesisPublisher = new KinesisPublisherImpl(maxErrorRetryCount, threadPoolSize, awsCredentialsProvider)
+           , awsRegion: Option[Region] = None
+           ): KinesisPublisher = new KinesisPublisherImpl(maxErrorRetryCount, threadPoolSize, awsCredentialsProvider, awsRegion)
 }
 
 
@@ -86,6 +88,7 @@ class KinesisPublisherImpl (
   maxErrorRetryCount: Int
 , threadPoolSize: Int
 , awsCredentialsProvider: AWSCredentialsProvider
+, awsRegion: Option[Region]
 ) extends KinesisPublisher
      with Loggable {
 
@@ -227,7 +230,8 @@ class KinesisPublisherImpl (
     val rp = PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(maxErrorRetryCount)
     val conf = cf.getConfig.withRetryPolicy(rp)
 
-    new AmazonKinesisClient(awsCredentialsProvider, conf)
+    val client = new AmazonKinesisClient(awsCredentialsProvider, conf)
+    awsRegion.fold(client)(region => client.withRegion(region))
   }
 
 
