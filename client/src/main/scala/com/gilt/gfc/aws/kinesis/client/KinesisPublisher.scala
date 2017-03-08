@@ -79,7 +79,7 @@ object KinesisPublisher {
            , threadPoolSize: Int = 8
            , awsCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , awsRegion: Option[Region] = None
-           , proxySettings: Option[ProxySettings]
+           , proxySettings: Option[ProxySettings] = None
            ): KinesisPublisher = new KinesisPublisherImpl(maxErrorRetryCount, threadPoolSize, awsCredentialsProvider, awsRegion, proxySettings)
 }
 
