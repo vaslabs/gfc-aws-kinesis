@@ -3,7 +3,7 @@ package com.gilt.gfc.aws.kinesis.client
 import java.nio.ByteBuffer
 import java.util.concurrent._
 
-import com.amazonaws.ClientConfigurationFactory
+import com.amazonaws.{ClientConfiguration, ClientConfigurationFactory}
 import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProviderChain}
 import com.amazonaws.regions.Region
 import com.amazonaws.retry.PredefinedRetryPolicies
@@ -79,7 +79,8 @@ object KinesisPublisher {
            , threadPoolSize: Int = 8
            , awsCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , awsRegion: Option[Region] = None
-           ): KinesisPublisher = new KinesisPublisherImpl(maxErrorRetryCount, threadPoolSize, awsCredentialsProvider, awsRegion)
+           , proxySettings: Option[ProxySettings]
+           ): KinesisPublisher = new KinesisPublisherImpl(maxErrorRetryCount, threadPoolSize, awsCredentialsProvider, awsRegion, proxySettings)
 }
 
 
@@ -89,6 +90,7 @@ class KinesisPublisherImpl (
 , threadPoolSize: Int
 , awsCredentialsProvider: AWSCredentialsProvider
 , awsRegion: Option[Region]
+, proxySettings: Option[ProxySettings]
 ) extends KinesisPublisher
      with Loggable {
 
@@ -229,6 +231,8 @@ class KinesisPublisherImpl (
     // There are intermittent 500 errors, the documented action is to retry
     val rp = PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(maxErrorRetryCount)
     val conf = cf.getConfig.withRetryPolicy(rp)
+
+    proxySettings.foreach(_.configureClientConfiguration(conf))
 
     val client = new AmazonKinesisClient(awsCredentialsProvider, conf)
     awsRegion.foreach(region => client.setRegion(region))

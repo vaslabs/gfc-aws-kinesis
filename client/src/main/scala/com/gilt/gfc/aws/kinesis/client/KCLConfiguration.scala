@@ -36,9 +36,10 @@ object KCLConfiguration {
            , dynamoCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , cloudWatchCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , regionName: Option[String] = None
+           , proxySettings: Option[ProxySettings] = None
            ): KinesisClientLibConfiguration = {
 
-    new KinesisClientLibConfiguration(
+    val conf = new KinesisClientLibConfiguration(
       // We want same app to process multiple versions of stream,
       // this name-spaces them to avoid name clash in dynamodb.
       s"${applicationName}.${streamName}"
@@ -48,5 +49,8 @@ object KCLConfiguration {
     , cloudWatchCredentialsProvider
     , s"${HostName}:${UUID.randomUUID()}"
     ).withRegionName(regionName.orNull)
+    proxySettings.foreach(_.configureClientConfiguration(conf.getKinesisClientConfiguration))
+    proxySettings.foreach(_.configureClientConfiguration(conf.getDynamoDBClientConfiguration))
+    conf
   }
 }

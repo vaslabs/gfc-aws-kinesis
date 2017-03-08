@@ -4,6 +4,7 @@ import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProvider
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream
 import com.amazonaws.services.kinesis.metrics.impl.NullMetricsFactory
 import com.amazonaws.services.kinesis.metrics.interfaces.IMetricsFactory
+import com.gilt.gfc.aws.kinesis.client.ProxySettings
 
 import scala.concurrent.duration._
 
@@ -17,7 +18,8 @@ case class KinesisStreamConsumerConfig[T](
   checkPointInterval: FiniteDuration = 5.minutes,
   retryConfig: RetryConfig = RetryConfig(1.second, 1.second, 3),
   initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST,
-  regionName: Option[String] = None
+  regionName: Option[String] = None,
+  proxySettings: Option[ProxySettings] = None
 ) {
 
   /**
