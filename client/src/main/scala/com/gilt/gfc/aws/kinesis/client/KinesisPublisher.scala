@@ -15,7 +15,7 @@ import com.gilt.gfc.logging.Loggable
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.{FiniteDuration, _}
-import scala.concurrent.{Future, ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent.{ExecutionContext, Future, blocking}
 import scala.language.postfixOps
 import scala.util.Random
 import scala.util.control.NonFatal
@@ -74,19 +74,66 @@ object KinesisPublisher {
     * @param maxErrorRetryCount       how many times to retry in the case of publishing errors
     * @param threadPoolSize           we make synchronous requests to kinesis, this determines parallelism
     * @param awsCredentialsProvider   override default credentials provider
+    * @param awsRegion                override default region
     */
   def apply( maxErrorRetryCount: Int = 10
            , threadPoolSize: Int = 8
            , awsCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , awsRegion: Option[Region] = None
-           ): KinesisPublisher = new KinesisPublisherImpl(maxErrorRetryCount, threadPoolSize, awsCredentialsProvider, awsRegion)
+           ): KinesisPublisher = {
+
+    new KinesisPublisherImpl(
+      maxErrorRetryCount
+    , newDefaultExecutor(threadPoolSize)
+    , awsCredentialsProvider
+    , awsRegion
+    )
+  }
+
+
+  /** Constructs KinesisPublisher with a custom executor.
+    *
+    * @param maxErrorRetryCount       how many times to retry in the case of publishing errors
+    * @param executor                 custom executor service
+    * @param awsCredentialsProvider   override default credentials provider
+    * @param awsRegion                override default region
+    */
+  def apply( maxErrorRetryCount: Int
+           , executor: ExecutorService
+           , awsCredentialsProvider: AWSCredentialsProvider
+           , awsRegion: Option[Region]
+           ): KinesisPublisher = {
+
+    new KinesisPublisherImpl(
+      maxErrorRetryCount
+    , executor
+    , awsCredentialsProvider
+    , awsRegion
+    )
+  }
+
+
+  /** Like Executors.newCachedThreadPool() but with both, thread factory and max size provided. */
+  private[this]
+  def newDefaultExecutor( threadPoolSize: Int
+                        ): ExecutorService = {
+
+    new ThreadPoolExecutor(
+      0
+    , threadPoolSize
+    , 30L
+    , TimeUnit.SECONDS
+    , new SynchronousQueue[Runnable]()
+    , ThreadFactoryBuilder(getClass.getSimpleName, getClass.getSimpleName).build()
+    )
+  }
 }
 
 
 private[client]
 class KinesisPublisherImpl (
   maxErrorRetryCount: Int
-, threadPoolSize: Int
+, executor: ExecutorService
 , awsCredentialsProvider: AWSCredentialsProvider
 , awsRegion: Option[Region]
 ) extends KinesisPublisher
@@ -190,11 +237,13 @@ class KinesisPublisherImpl (
     // one is supposed to match arrays by index, at least they seem to be always of the same size
 
     try {
-      val res = kinesisClient.putRecords(
-        new PutRecordsRequest().
-          withStreamName(streamName).
-          withRecords(recordEntries.asJavaCollection)
-      )
+      val res = blocking {
+        kinesisClient.putRecords(
+          new PutRecordsRequest().
+            withStreamName(streamName).
+            withRecords(recordEntries.asJavaCollection)
+        )
+      }
 
       if (res.getFailedRecordCount > 0) {
         val failedRecords = for (
@@ -220,7 +269,7 @@ class KinesisPublisherImpl (
 
   /** N.B. AWS provides async client as well but it's just a simple wrapper around
     * sync client, with java-based Futures and other async primitives.
-    * No reason to use it, really.
+    * No reason to use it, really, we can get Scala futures from Scala's execution context.
     */
   private[this]
   val kinesisClient = {
@@ -234,17 +283,6 @@ class KinesisPublisherImpl (
     awsRegion.foreach(region => client.setRegion(region))
     client
   }
-
-
-  private[this]
-  val executor = new java.util.concurrent.ThreadPoolExecutor(
-    0
-  , threadPoolSize
-  , 30L
-  , TimeUnit.SECONDS
-  , new SynchronousQueue[Runnable]()
-  , ThreadFactoryBuilder(getClass.getSimpleName, getClass.getSimpleName).build()
-  )
 
 
   implicit
