@@ -2,7 +2,6 @@ package com.gilt.gfc.aws.kinesis.akka
 
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.ShutdownReason
-import com.amazonaws.services.kinesis.model.Record
 import com.gilt.gfc.aws.kinesis.client.KinesisRecordReader
 
 trait KinesisStreamHandler[T] {

@@ -1,14 +1,13 @@
 package com.gilt.gfc.aws.kinesis.client
 
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer
-import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorFactory
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{KinesisClientLibConfiguration, Worker}
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.ShutdownReason
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{InitialPositionInStream, KinesisClientLibConfiguration, ShutdownReason, Worker}
 import com.amazonaws.services.kinesis.metrics.interfaces.IMetricsFactory
 import com.amazonaws.services.kinesis.model.Record
 import com.gilt.gfc.logging.Loggable
-
 import java.util.concurrent.TimeUnit
+
+import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAdapterClient
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -30,6 +29,7 @@ import scala.util.{Failure, Success, Try}
  */
 case class KCLWorkerRunner (
   config: KinesisClientLibConfiguration
+, dynamoDBKinesisAdapter: Option[AmazonDynamoDBStreamsAdapterClient] = None
 , checkpointInterval: FiniteDuration = 5 minutes
 , numRetries: Int = 3
 , initialize: (String) => Unit = (_) => ()
@@ -79,7 +79,7 @@ case class KCLWorkerRunner (
   /**
    * Request graceful shutdown of all Kinesis workers.
    *
-   * @param callbackTimeout   how long to wait for shutdown to complete
+   * @param timeout   how long to wait for shutdown to complete
    */
   def shutdown(timeout: Duration = 1.minute): Unit = {
     val javaFutures = synchronized {
@@ -124,9 +124,16 @@ case class KCLWorkerRunner (
         errs.map(_.failed.get).foreach { e => error(e.getMessage, e) }
       }
 
-      val worker = metricsFactory.fold(
-        new Worker(recordProcessorFactory, config))(
-        mf => new Worker(recordProcessorFactory, config, mf))
+      val workerBuilder: Worker.Builder = new Worker.Builder()
+            .recordProcessorFactory(recordProcessorFactory)
+              .config(config)
+      dynamoDBKinesisAdapter.foreach(
+        adapter => workerBuilder.kinesisClient(adapter)
+      )
+      metricsFactory.foreach(mf => workerBuilder.metricsFactory(mf))
+
+
+      val worker = workerBuilder.build()
 
       synchronized {
         workers ::= worker

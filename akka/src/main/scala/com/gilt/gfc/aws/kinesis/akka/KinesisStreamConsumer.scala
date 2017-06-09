@@ -14,11 +14,14 @@ class KinesisStreamConsumer[T](
     streamConfig.kinesisCredentialsProvider,
     streamConfig.dynamoCredentialsProvider,
     streamConfig.cloudWatchCredentialsProvider,
-    streamConfig.regionName
+    streamConfig.regionName,
+    streamConfig.dynamoDBKinesisAdapterClient,
+    streamConfig.initialPositionInStream
   )
 
   private def createWorker = KCLWorkerRunner(
     kclConfig,
+    dynamoDBKinesisAdapter = streamConfig.dynamoDBKinesisAdapterClient,
     metricsFactory = Some(streamConfig.metricsFactory),
     checkpointInterval = streamConfig.checkPointInterval,
     initialize = handler.onInit,

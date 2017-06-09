@@ -1,6 +1,7 @@
 package com.gilt.gfc.aws.kinesis.akka
 
 import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProviderChain}
+import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAdapterClient
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream
 import com.amazonaws.services.kinesis.metrics.impl.NullMetricsFactory
 import com.amazonaws.services.kinesis.metrics.interfaces.IMetricsFactory
@@ -17,7 +18,8 @@ case class KinesisStreamConsumerConfig[T](
   checkPointInterval: FiniteDuration = 5.minutes,
   retryConfig: RetryConfig = RetryConfig(1.second, 1.second, 3),
   initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST,
-  regionName: Option[String] = None
+  regionName: Option[String] = None,
+  dynamoDBKinesisAdapterClient: Option[AmazonDynamoDBStreamsAdapterClient] = None
 ) {
 
   /**

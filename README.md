@@ -51,3 +51,65 @@ Publish events:
 
   val result: Future[KinesisPublisherBatchResult] = publisher.publishBatch("kinesis-stream-name", messages)
 ```
+
+# DynamoDB streaming
+
+Create the adapter client
+```scala
+val streamAdapterClient: AmazonDynamoDBStreamsAdapterClient =
+    new AmazonDynamoDBStreamsAdapterClient()
+```
+
+Pass the adapter client in the configuration
+```scala
+val streamSource = {
+    val streamConfig = KinesisStreamConsumerConfig[Option[A]](
+      applicationName,
+      config.stream,
+      regionName = Some(config.region),
+      checkPointInterval = config.checkpointInterval,
+      initialPositionInStream = config.streamPosition,
+      proxySettings = config.proxySettings,
+      dynamoDBKinesisAdapterClient = streamAdapterClient
+    )
+    KinesisStreamSource(streamConfig).mapMaterializedValue(_ => NotUsed)
+  }
+```
+
+Pass an implicit kinesis record reader suitable for dynamodb events
+```scala
+implicit val kinesisRecordReader
+      : KinesisRecordReader[Option[A]] =
+      new KinesisRecordReader[Option[A]] {
+        override def apply(record: Record): Option[A] = {
+          record match {
+            case recordAdapter: RecordAdapter =>
+              val dynamoRecord: DynamoRecord =
+                recordAdapter.getInternalObject
+              dynamoRecord.getEventName match {
+                case "INSERT" =>
+                  ScanamoFree
+                    .read[A](
+                      dynamoRecord.getDynamodb.getNewImage)
+                    .toOption
+                case _ => None
+              }
+            case _ => None
+          }
+        }
+      }
+```
+
+Consume e.g. using a sink
+
+```scala
+val targetSink = Sink.actorRefWithAck(target, startMsg, ackMsg, Done)
+
+streamSource
+  .filter(!_.isEmpty)
+  .map(_.get)
+  .log(applicationName)(log)
+  .runWith(targetSink)
+```
+
+

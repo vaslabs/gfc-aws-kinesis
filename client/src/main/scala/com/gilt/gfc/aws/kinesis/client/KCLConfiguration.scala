@@ -2,9 +2,9 @@ package com.gilt.gfc.aws.kinesis.client
 
 import java.util.UUID
 
-import com.amazonaws.auth.{AWSCredentialsProvider, AWSCredentialsProviderChain, DefaultAWSCredentialsProviderChain}
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration
-
+import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProviderChain}
+import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAdapterClient
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{InitialPositionInStream, KinesisClientLibConfiguration}
 
 /** Configures KCL
   *
@@ -36,17 +36,27 @@ object KCLConfiguration {
            , dynamoCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , cloudWatchCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , regionName: Option[String] = None
-           ): KinesisClientLibConfiguration = {
+           , dynamoDBKinesisAdapterClient: Option[AmazonDynamoDBStreamsAdapterClient] = None
+           , initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST): KinesisClientLibConfiguration = {
 
-    new KinesisClientLibConfiguration(
-      // We want same app to process multiple versions of stream,
-      // this name-spaces them to avoid name clash in dynamodb.
-      s"${applicationName}.${streamName}"
-    , streamName
-    , kinesisCredentialsProvider
-    , dynamoCredentialsProvider
-    , cloudWatchCredentialsProvider
-    , s"${HostName}:${UUID.randomUUID()}"
+    val dynamoTableName = (s"${applicationName}.${streamName}")
+      .replaceAll("[^a-zA-Z0-9_.-]", "-")
+
+    val conf = new KinesisClientLibConfiguration(
+      dynamoTableName,
+      streamName,
+      kinesisCredentialsProvider,
+      dynamoCredentialsProvider,
+      cloudWatchCredentialsProvider,
+      s"${HostName}:${UUID.randomUUID()}"
     ).withRegionName(regionName.orNull)
+     .withInitialPositionInStream(initialPositionInStream)
+    val adapterConf = dynamoDBKinesisAdapterClient.map {
+      client =>
+        conf.withMaxRecords(1000) //using AWS recommended value
+          .withIdleTimeBetweenReadsInMillis(500) //using AWS recommended value
+    }.getOrElse(conf)
+
+    adapterConf
   }
 }
