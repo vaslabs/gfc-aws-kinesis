@@ -5,6 +5,7 @@ import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAda
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream
 import com.amazonaws.services.kinesis.metrics.impl.NullMetricsFactory
 import com.amazonaws.services.kinesis.metrics.interfaces.IMetricsFactory
+import com.gilt.gfc.aws.kinesis.client.KinesisClientEndpoints
 
 import scala.concurrent.duration._
 
@@ -19,7 +20,8 @@ case class KinesisStreamConsumerConfig[T](
   retryConfig: RetryConfig = RetryConfig(1.second, 1.second, 3),
   initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST,
   regionName: Option[String] = None,
-  dynamoDBKinesisAdapterClient: Option[AmazonDynamoDBStreamsAdapterClient] = None
+  dynamoDBKinesisAdapterClient: Option[AmazonDynamoDBStreamsAdapterClient] = None,
+  kinesisClientEndpoints: Option[KinesisClientEndpoints] = None
 ) {
 
   /**

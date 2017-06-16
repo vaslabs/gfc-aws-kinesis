@@ -16,7 +16,8 @@ class KinesisStreamConsumer[T](
     streamConfig.cloudWatchCredentialsProvider,
     streamConfig.regionName,
     streamConfig.dynamoDBKinesisAdapterClient,
-    streamConfig.initialPositionInStream
+    streamConfig.initialPositionInStream,
+    streamConfig.kinesisClientEndpoints
   )
 
   private def createWorker = KCLWorkerRunner(

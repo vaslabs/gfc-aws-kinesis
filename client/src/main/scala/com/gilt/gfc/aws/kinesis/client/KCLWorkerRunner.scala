@@ -132,7 +132,6 @@ case class KCLWorkerRunner (
       )
       metricsFactory.foreach(mf => workerBuilder.metricsFactory(mf))
 
-
       val worker = workerBuilder.build()
 
       synchronized {

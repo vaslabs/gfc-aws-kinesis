@@ -69,7 +69,6 @@ val streamSource = {
       regionName = Some(config.region),
       checkPointInterval = config.checkpointInterval,
       initialPositionInStream = config.streamPosition,
-      proxySettings = config.proxySettings,
       dynamoDBKinesisAdapterClient = streamAdapterClient
     )
     KinesisStreamSource(streamConfig).mapMaterializedValue(_ => NotUsed)

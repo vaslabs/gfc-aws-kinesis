@@ -13,6 +13,7 @@ import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{InitialPositionI
   *
   * https://github.com/awslabs/amazon-kinesis-client
   */
+case class KinesisClientEndpoints(dynamoDBEndpoint: String, kinesisEndpoint: String)
 object KCLConfiguration {
 
   val HostName = {
@@ -37,7 +38,8 @@ object KCLConfiguration {
            , cloudWatchCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , regionName: Option[String] = None
            , dynamoDBKinesisAdapterClient: Option[AmazonDynamoDBStreamsAdapterClient] = None
-           , initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST): KinesisClientLibConfiguration = {
+           , initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST
+           , endpointConfiguration: Option[KinesisClientEndpoints] = None): KinesisClientLibConfiguration = {
 
     val dynamoTableName = (s"${applicationName}.${streamName}")
       .replaceAll("[^a-zA-Z0-9_.-]", "-")
@@ -57,6 +59,10 @@ object KCLConfiguration {
           .withIdleTimeBetweenReadsInMillis(500) //using AWS recommended value
     }.getOrElse(conf)
 
-    adapterConf
+    endpointConfiguration.map( endpoints =>
+      adapterConf.withDynamoDBEndpoint(endpoints.dynamoDBEndpoint)
+          .withKinesisEndpoint(endpoints.kinesisEndpoint)
+    ).getOrElse(adapterConf)
+
   }
 }
