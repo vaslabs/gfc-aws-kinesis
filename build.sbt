@@ -61,12 +61,12 @@ lazy val client = (project in file("client"))
   name := "gfc-aws-kinesis",
   libraryDependencies ++= Seq(
     "com.gilt"      %% "gfc-util"              % "0.1.7",
-    "com.gilt"      %% "gfc-logging"           % "0.0.7",
-    "com.gilt"      %% "gfc-concurrent"        % "0.3.5",
-    "com.amazonaws" %  "aws-java-sdk-kinesis"  % "1.11.18",
-    "com.amazonaws" %  "amazon-kinesis-client" % "1.7.3",
+    "com.gilt"      %% "gfc-logging"           % "0.0.8",
+    "com.gilt"      %% "gfc-concurrent"        % "0.3.6",
+    "com.amazonaws" %  "aws-java-sdk-kinesis"  % "1.11.166",
+    "com.amazonaws" %  "amazon-kinesis-client" % "1.7.6",
     "com.amazonaws" % "dynamodb-streams-kinesis-adapter" % "1.2.2",
-    "org.specs2"    %% "specs2-scalacheck"     % "3.8.6" % Test
+    "org.specs2"    %% "specs2-scalacheck"     % "3.9.4" % Test
   )
 )
 
