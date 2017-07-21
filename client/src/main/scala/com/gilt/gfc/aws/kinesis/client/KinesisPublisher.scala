@@ -5,9 +5,10 @@ import java.util.concurrent._
 
 import com.amazonaws.ClientConfigurationFactory
 import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProviderChain}
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.regions.Region
 import com.amazonaws.retry.PredefinedRetryPolicies
-import com.amazonaws.services.kinesis.AmazonKinesisClient
+import com.amazonaws.services.kinesis.{AmazonKinesisClient, AmazonKinesisClientBuilder}
 import com.amazonaws.services.kinesis.model.{PutRecordsRequest, PutRecordsRequestEntry}
 import com.gilt.gfc.concurrent.ThreadFactoryBuilder
 import com.gilt.gfc.logging.Loggable
@@ -75,11 +76,13 @@ object KinesisPublisher {
     * @param threadPoolSize           we make synchronous requests to kinesis, this determines parallelism
     * @param awsCredentialsProvider   override default credentials provider
     * @param awsRegion                override default region
+    * @param awsEndpointConfig        override default endpoint
     */
   def apply( maxErrorRetryCount: Int = 10
            , threadPoolSize: Int = 8
            , awsCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , awsRegion: Option[Region] = None
+           , awsEndpointConfig: Option[EndpointConfiguration] = None
            ): KinesisPublisher = {
 
     new KinesisPublisherImpl(
@@ -87,6 +90,7 @@ object KinesisPublisher {
     , newDefaultExecutor(threadPoolSize)
     , awsCredentialsProvider
     , awsRegion
+    , awsEndpointConfig
     )
   }
 
@@ -103,12 +107,30 @@ object KinesisPublisher {
            , awsCredentialsProvider: AWSCredentialsProvider
            , awsRegion: Option[Region]
            ): KinesisPublisher = {
+    apply(maxErrorRetryCount, executor, awsCredentialsProvider, awsRegion, None)
+  }
+
+  /** Constructs KinesisPublisher with a custom executor.
+    *
+    * @param maxErrorRetryCount       how many times to retry in the case of publishing errors
+    * @param executor                 custom executor service
+    * @param awsCredentialsProvider   override default credentials provider
+    * @param awsRegion                override default region
+    * @param awsEndpointConfig        override default endpoint
+    */
+  def apply( maxErrorRetryCount: Int
+           , executor: ExecutorService
+           , awsCredentialsProvider: AWSCredentialsProvider
+           , awsRegion: Option[Region]
+           , awsEndpointConfig: Option[EndpointConfiguration]
+           ): KinesisPublisher = {
 
     new KinesisPublisherImpl(
       maxErrorRetryCount
     , executor
     , awsCredentialsProvider
     , awsRegion
+    , awsEndpointConfig
     )
   }
 
@@ -136,6 +158,7 @@ class KinesisPublisherImpl (
 , executor: ExecutorService
 , awsCredentialsProvider: AWSCredentialsProvider
 , awsRegion: Option[Region]
+, awsEndpointConfig: Option[EndpointConfiguration]
 ) extends KinesisPublisher
      with Loggable {
 
@@ -279,9 +302,14 @@ class KinesisPublisherImpl (
     val rp = PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(maxErrorRetryCount)
     val conf = cf.getConfig.withRetryPolicy(rp)
 
-    val client = new AmazonKinesisClient(awsCredentialsProvider, conf)
-    awsRegion.foreach(region => client.setRegion(region))
-    client
+    val builder = AmazonKinesisClientBuilder.standard()
+      .withClientConfiguration(conf)
+      .withCredentials(awsCredentialsProvider)
+
+    awsRegion.foreach(region => builder.setRegion(region.getName))
+    awsEndpointConfig.foreach(endpoint => builder.setEndpointConfiguration(endpoint))
+
+    builder.build()
   }
 
 
