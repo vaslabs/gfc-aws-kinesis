@@ -209,7 +209,7 @@ class KinesisPublisherImpl (
       if (callResults.failures.isEmpty) {
         debug(s"${logPrefix} successfully published ${recordEntries.size} records")
       } else {
-        warn(s"${logPrefix} published ${recordEntries.size} records with ${thisResult.failureRecordCount} left over due to errors: by errorCode: ${thisResult.errorCodes}, by shard: ${thisResult.shardErrors}")
+        warn(s"${logPrefix} published ${recordEntries.size} records with ${callResults.failures.size} left over due to errors: by errorCode: ${thisResult.errorCodes}")
       }
 
       callResults.hardFailures.foreach { case (e,r) =>

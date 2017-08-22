@@ -22,21 +22,18 @@ class KinesisPublisherBatchResultTest
       , serviceErrorCount = 100
       , attemptCount = 1000
       , errorCodes = HashMap("foo" -> 1, "bar" -> 2)
-      , shardErrors = HashMap("baz" -> 10, "quux" -> 20)
       ) + KinesisPublisherBatchResult(
         successRecordCount = 2
       , failureRecordCount = 20
       , serviceErrorCount = 200
       , attemptCount = 2000
       , errorCodes = HashMap(("foo" -> 3))
-      , shardErrors = HashMap(("baz" -> 30))
       )) should_===(KinesisPublisherBatchResult(
         successRecordCount = 3
       , failureRecordCount = 30
       , serviceErrorCount = 300
       , attemptCount = 3000
       , errorCodes = HashMap("foo" -> 4, "bar" -> 2)
-      , shardErrors = HashMap("baz" -> 40, "quux" -> 20)
       ))
     }
 
@@ -59,15 +56,13 @@ class KinesisPublisherBatchResultTest
       KinesisPublisherBatchResult(KinesisPublisherPutRecordsCallResults(
         (Seq.tabulate(4)(i => cr(s"shard${i}", null)) ) ++
         (for {
-          shardId <- Seq("shard1", "shard2")
           errCode <- Seq("err1", "err2", "ServiceUnavailable") // ServiceUnavailable is a recoverable error
-        } yield (cr(shardId, errCode)))
+        } yield (cr(null, errCode)))
       )) should_===(KinesisPublisherBatchResult(
         successRecordCount = 4
-      , failureRecordCount = 4
+      , failureRecordCount = 2 // err1 and err2 are not to be retried
       , attemptCount = 1
-      , errorCodes = HashMap("err2" -> 2, "ServiceUnavailable" -> 2, "err1" -> 2)
-      , shardErrors = HashMap("shard2" -> 3, "shard1" -> 3)
+      , errorCodes = HashMap("err2" -> 1, "ServiceUnavailable" -> 1, "err1" -> 1)
       , shardRecordCounts = HashMap("shard0" -> 1, "shard1" -> 1, "shard2" -> 1, "shard3" -> 1)
       ))
 
@@ -82,7 +77,6 @@ class KinesisPublisherBatchResultTest
       , failureRecordCount = 3
       , attemptCount = 1
       , errorCodes = HashMap("err2" -> 1, "err3" -> 1, "err1" -> 1)
-      , shardErrors = HashMap()
       , shardRecordCounts = HashMap("shard0" -> 1, "shard1" -> 1, "shard2" -> 1, "shard3" -> 1)
       ))
     }
@@ -98,7 +92,6 @@ class KinesisPublisherBatchResultTest
       , failureRecordCount = 0
       , attemptCount = 1
       , errorCodes = HashMap.empty
-      , shardErrors = HashMap.empty
       , shardRecordCounts = HashMap("shard_1" -> 3, "shard_2" -> 4)
       ))
     }
