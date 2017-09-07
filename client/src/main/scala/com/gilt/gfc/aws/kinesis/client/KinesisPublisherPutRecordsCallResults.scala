@@ -13,6 +13,7 @@ case class KinesisPublisherPutRecordsCallResults (
   allResults: Seq[( PutRecordsRequestEntry
                   , Option[PutRecordsResultEntry])]
 , requestId: Option[String] = None
+, responseHeaders: Map[String,String] = Map.empty // for debugging
 ) {
 
   /** Separates failed records from successfully published ones. */

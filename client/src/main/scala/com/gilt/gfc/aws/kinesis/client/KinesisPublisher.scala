@@ -209,7 +209,7 @@ class KinesisPublisherImpl (
       if (callResults.failures.isEmpty) {
         debug(s"${logPrefix} successfully published ${recordEntries.size} records")
       } else {
-        warn(s"${logPrefix} published ${recordEntries.size} records with ${callResults.failures.size} left over due to errors: by errorCode: ${thisResult.errorCodes}")
+        warn(s"${logPrefix} published ${recordEntries.size} records with ${callResults.failures.size} left over due to errors: by errorCode: ${thisResult.errorCodes}, response headers: ${callResults.responseHeaders}")
       }
 
       callResults.hardFailures.foreach { case (e,r) =>
@@ -251,6 +251,10 @@ class KinesisPublisherImpl (
           (req, Some(res))
         }
       , requestId = Option(callRes.getSdkResponseMetadata).flatMap(m => Option(m.getRequestId))
+      , responseHeaders = (for {
+          sdkMeta <- Option(callRes.getSdkHttpMetadata)
+          responseHeaders <- Option(sdkMeta.getHttpHeaders)
+        } yield responseHeaders.asScala.toMap).getOrElse(Map.empty)
       )
     } catch {
       case NonFatal(e) =>
