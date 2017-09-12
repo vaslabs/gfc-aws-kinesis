@@ -17,7 +17,8 @@ class KinesisStreamConsumer[T](
     streamConfig.regionName,
     streamConfig.dynamoDBKinesisAdapterClient,
     streamConfig.initialPositionInStream,
-    streamConfig.kinesisClientEndpoints
+    streamConfig.kinesisClientEndpoints,
+    streamConfig.failoverTimeoutMillis
   )
 
   private def createWorker = KCLWorkerRunner(

@@ -21,7 +21,8 @@ case class KinesisStreamConsumerConfig[T](
   initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST,
   regionName: Option[String] = None,
   dynamoDBKinesisAdapterClient: Option[AmazonDynamoDBStreamsAdapterClient] = None,
-  kinesisClientEndpoints: Option[KinesisClientEndpoints] = None
+  kinesisClientEndpoints: Option[KinesisClientEndpoints] = None,
+  failoverTimeoutMillis: Option[Long] = None
 ) {
 
   /**

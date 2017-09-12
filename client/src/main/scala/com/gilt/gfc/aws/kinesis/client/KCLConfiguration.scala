@@ -39,7 +39,8 @@ object KCLConfiguration {
            , regionName: Option[String] = None
            , dynamoDBKinesisAdapterClient: Option[AmazonDynamoDBStreamsAdapterClient] = None
            , initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST
-           , endpointConfiguration: Option[KinesisClientEndpoints] = None): KinesisClientLibConfiguration = {
+           , endpointConfiguration: Option[KinesisClientEndpoints] = None
+           , failoverTimeoutMillis: Option[Long] = None): KinesisClientLibConfiguration = {
 
     val dynamoTableName = (s"${applicationName}.${streamName}")
       .replaceAll("[^a-zA-Z0-9_.-]", "-")
@@ -53,6 +54,7 @@ object KCLConfiguration {
       s"${HostName}:${UUID.randomUUID()}"
     ).withRegionName(regionName.orNull)
      .withInitialPositionInStream(initialPositionInStream)
+     .withFailoverTimeMillis(failoverTimeoutMillis.getOrElse(KinesisClientLibConfiguration.DEFAULT_FAILOVER_TIME_MILLIS))
     val adapterConf = dynamoDBKinesisAdapterClient.map {
       client =>
         conf.withMaxRecords(1000) //using AWS recommended value
