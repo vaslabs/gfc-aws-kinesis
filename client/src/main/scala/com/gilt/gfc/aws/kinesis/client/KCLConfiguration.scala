@@ -55,16 +55,16 @@ object KCLConfiguration {
     ).withRegionName(regionName.orNull)
      .withInitialPositionInStream(initialPositionInStream)
      .withFailoverTimeMillis(failoverTimeoutMillis.getOrElse(KinesisClientLibConfiguration.DEFAULT_FAILOVER_TIME_MILLIS))
-    val adapterConf = dynamoDBKinesisAdapterClient.map {
-      client =>
-        conf.withMaxRecords(1000) //using AWS recommended value
-          .withIdleTimeBetweenReadsInMillis(500) //using AWS recommended value
-    }.getOrElse(conf)
 
-    endpointConfiguration.map( endpoints =>
+    val adapterConf = dynamoDBKinesisAdapterClient.fold(conf) { _ =>
+      conf.withMaxRecords(1000) //using AWS recommended value
+        .withIdleTimeBetweenReadsInMillis(500) //using AWS recommended value
+    }
+
+    endpointConfiguration.fold(adapterConf)( endpoints =>
       adapterConf.withDynamoDBEndpoint(endpoints.dynamoDBEndpoint)
           .withKinesisEndpoint(endpoints.kinesisEndpoint)
-    ).getOrElse(adapterConf)
+    )
 
   }
 }
