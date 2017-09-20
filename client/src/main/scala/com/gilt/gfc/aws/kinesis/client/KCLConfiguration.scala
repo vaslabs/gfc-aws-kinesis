@@ -6,6 +6,8 @@ import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProvider
 import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAdapterClient
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{InitialPositionInStream, KinesisClientLibConfiguration}
 
+import scala.concurrent.duration.FiniteDuration
+
 /** Configures KCL
   *
   * http://docs.aws.amazon.com/kinesis/latest/dev/kinesis-record-processor-implementation-app-java.html
@@ -39,7 +41,9 @@ object KCLConfiguration {
            , regionName: Option[String] = None
            , initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST
            , endpointConfiguration: Option[KinesisClientEndpoints] = None
-           , failoverTimeoutMillis: Option[Long] = None): KinesisClientLibConfiguration = {
+           , failoverTimeoutMillis: Option[Long] = None
+           , maxRecordsToFetchForEachGetRequest: Option[Int]
+           , idleTimeBetweenReads: Option[FiniteDuration]): KinesisClientLibConfiguration = {
 
     val dynamoTableName = (s"${applicationName}.${streamName}")
       .replaceAll("[^a-zA-Z0-9_.-]", "-")
@@ -54,6 +58,12 @@ object KCLConfiguration {
     ).withRegionName(regionName.orNull)
      .withInitialPositionInStream(initialPositionInStream)
      .withFailoverTimeMillis(failoverTimeoutMillis.getOrElse(KinesisClientLibConfiguration.DEFAULT_FAILOVER_TIME_MILLIS))
+     .withMaxRecords(maxRecordsToFetchForEachGetRequest.getOrElse((KinesisClientLibConfiguration.DEFAULT_MAX_RECORDS)))
+     .withIdleTimeBetweenReadsInMillis(
+       idleTimeBetweenReads.map(_.toMillis).getOrElse(
+         KinesisClientLibConfiguration.DEFAULT_IDLETIME_BETWEEN_READS_MILLIS
+       )
+     )
 
     endpointConfiguration.fold(conf)( endpoints =>
       conf.withDynamoDBEndpoint(endpoints.dynamoDBEndpoint)

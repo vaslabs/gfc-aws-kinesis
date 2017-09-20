@@ -2,12 +2,23 @@ package com.gilt.gfc.aws.kinesis.akka
 
 import com.gilt.gfc.aws.kinesis.client.{KCLConfiguration, KCLWorkerRunner, KinesisRecordReader}
 
+import scala.concurrent.duration._
+
 class KinesisStreamConsumer[T](
   streamConfig: KinesisStreamConsumerConfig[T],
   handler: KinesisStreamHandler[T]
 ) (
   implicit private val evReader: KinesisRecordReader[T]
 ) {
+
+  val maxRecords: Option[Int] = streamConfig.maximumNumberOfRecordsToFetchOnEachCall.orElse(
+    streamConfig.dynamoDBKinesisAdapterClient.flatMap(_ => Some(1000))
+  )
+
+  val idleTimeout: Option[FiniteDuration] = streamConfig.idleTimeBetweenReads.orElse(
+    streamConfig.dynamoDBKinesisAdapterClient.flatMap(_ => Some(500 milliseconds))
+  )
+
   private val kclConfig = KCLConfiguration(
     streamConfig.applicationName,
     streamConfig.streamName,
@@ -17,16 +28,13 @@ class KinesisStreamConsumer[T](
     streamConfig.regionName,
     streamConfig.initialPositionInStream,
     streamConfig.kinesisClientEndpoints,
-    streamConfig.failoverTimeoutMillis
+    streamConfig.failoverTimeoutMillis,
+    maxRecords,
+    idleTimeout
   )
 
-  private val adapterConfig = streamConfig.dynamoDBKinesisAdapterClient.fold(kclConfig) {
-    _ => kclConfig.withMaxRecords(1000) //using AWS recommended value
-      .withIdleTimeBetweenReadsInMillis(500) //using AWS recommended value
-  }
-
   private def createWorker = KCLWorkerRunner(
-    adapterConfig,
+    kclConfig,
     dynamoDBKinesisAdapter = streamConfig.dynamoDBKinesisAdapterClient,
     metricsFactory = Some(streamConfig.metricsFactory),
     checkpointInterval = streamConfig.checkPointInterval,
