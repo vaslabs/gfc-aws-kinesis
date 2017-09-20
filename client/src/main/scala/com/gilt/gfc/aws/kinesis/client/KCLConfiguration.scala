@@ -37,7 +37,6 @@ object KCLConfiguration {
            , dynamoCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , cloudWatchCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
            , regionName: Option[String] = None
-           , dynamoDBKinesisAdapterClient: Option[AmazonDynamoDBStreamsAdapterClient] = None
            , initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST
            , endpointConfiguration: Option[KinesisClientEndpoints] = None
            , failoverTimeoutMillis: Option[Long] = None): KinesisClientLibConfiguration = {
@@ -56,13 +55,8 @@ object KCLConfiguration {
      .withInitialPositionInStream(initialPositionInStream)
      .withFailoverTimeMillis(failoverTimeoutMillis.getOrElse(KinesisClientLibConfiguration.DEFAULT_FAILOVER_TIME_MILLIS))
 
-    val adapterConf = dynamoDBKinesisAdapterClient.fold(conf) { _ =>
-      conf.withMaxRecords(1000) //using AWS recommended value
-        .withIdleTimeBetweenReadsInMillis(500) //using AWS recommended value
-    }
-
-    endpointConfiguration.fold(adapterConf)( endpoints =>
-      adapterConf.withDynamoDBEndpoint(endpoints.dynamoDBEndpoint)
+    endpointConfiguration.fold(conf)( endpoints =>
+      conf.withDynamoDBEndpoint(endpoints.dynamoDBEndpoint)
           .withKinesisEndpoint(endpoints.kinesisEndpoint)
     )
 
