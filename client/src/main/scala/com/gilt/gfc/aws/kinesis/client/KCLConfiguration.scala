@@ -33,17 +33,17 @@ object KCLConfiguration {
     *
     * @param streamName kinesis stream name
     */
-  def apply( applicationName: String
-           , streamName: String
-           , kinesisCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
-           , dynamoCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
-           , cloudWatchCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
-           , regionName: Option[String] = None
-           , initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST
-           , endpointConfiguration: Option[KinesisClientEndpoints] = None
-           , failoverTimeoutMillis: Option[Long] = None
-           , maxRecordsToFetchForEachGetRequest: Option[Int]
-           , idleTimeBetweenReads: Option[FiniteDuration]): KinesisClientLibConfiguration = {
+  def apply(applicationName: String
+            , streamName: String
+            , kinesisCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+            , dynamoCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+            , cloudWatchCredentialsProvider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+            , regionName: Option[String] = None
+            , initialPositionInStream: InitialPositionInStream = InitialPositionInStream.LATEST
+            , endpointConfiguration: Option[KinesisClientEndpoints] = None
+            , failoverTimeoutMillis: Option[Long] = None
+            , maxRecordsPerBatch: Option[Int]
+            , idleTimeBetweenReads: Option[FiniteDuration]): KinesisClientLibConfiguration = {
 
     val dynamoTableName = (s"${applicationName}.${streamName}")
       .replaceAll("[^a-zA-Z0-9_.-]", "-")
@@ -58,7 +58,7 @@ object KCLConfiguration {
     ).withRegionName(regionName.orNull)
      .withInitialPositionInStream(initialPositionInStream)
      .withFailoverTimeMillis(failoverTimeoutMillis.getOrElse(KinesisClientLibConfiguration.DEFAULT_FAILOVER_TIME_MILLIS))
-     .withMaxRecords(maxRecordsToFetchForEachGetRequest.getOrElse((KinesisClientLibConfiguration.DEFAULT_MAX_RECORDS)))
+     .withMaxRecords(maxRecordsPerBatch.getOrElse((KinesisClientLibConfiguration.DEFAULT_MAX_RECORDS)))
      .withIdleTimeBetweenReadsInMillis(
        idleTimeBetweenReads.map(_.toMillis).getOrElse(
          KinesisClientLibConfiguration.DEFAULT_IDLETIME_BETWEEN_READS_MILLIS
