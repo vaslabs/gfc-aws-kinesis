@@ -11,12 +11,8 @@ class KinesisStreamConsumer[T](
   implicit private val evReader: KinesisRecordReader[T]
 ) {
 
-  val maxRecords: Option[Int] = streamConfig.maximumNumberOfRecordsToFetchOnEachCall.orElse(
-    streamConfig.dynamoDBKinesisAdapterClient.flatMap(_ => Some(1000))
-  )
-
-  val idleTimeout: Option[FiniteDuration] = streamConfig.idleTimeBetweenReads.orElse(
-    streamConfig.dynamoDBKinesisAdapterClient.flatMap(_ => Some(500 milliseconds))
+  private val maxRecords: Option[Int] = streamConfig.maxRecordsPerBatch.orElse(
+    streamConfig.dynamoDBKinesisAdapterClient.map(_ => 1000)
   )
 
   private val kclConfig = KCLConfiguration(
@@ -30,7 +26,7 @@ class KinesisStreamConsumer[T](
     streamConfig.kinesisClientEndpoints,
     streamConfig.failoverTimeoutMillis,
     maxRecords,
-    idleTimeout
+    streamConfig.idleTimeBetweenReads
   )
 
   private def createWorker = KCLWorkerRunner(

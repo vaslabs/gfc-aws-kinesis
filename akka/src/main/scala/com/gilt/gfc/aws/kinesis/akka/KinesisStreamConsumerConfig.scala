@@ -23,7 +23,7 @@ case class KinesisStreamConsumerConfig[T](
   dynamoDBKinesisAdapterClient: Option[AmazonDynamoDBStreamsAdapterClient] = None,
   kinesisClientEndpoints: Option[KinesisClientEndpoints] = None,
   failoverTimeoutMillis: Option[Long] = None,
-  maximumNumberOfRecordsToFetchOnEachCall: Option[Int] = None,
+  maxRecordsPerBatch: Option[Int] = None,
   idleTimeBetweenReads: Option[FiniteDuration] = None
 ) {
 
